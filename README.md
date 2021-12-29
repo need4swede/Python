@@ -12,7 +12,7 @@ Here are some of my personal projects made using Python. Hope they'll prove usef
 
 ## List of Scripts
 
-### <a href="https://github.com/need4swede/Python/blob/main/Halo%20Backup%20Utility/HaloBackupUtility.py">' Halo Infinite Backup Utility '</a>
+### <a href="https://github.com/need4swede/Python/tree/main/Halo%20Backup%20Utility">' Halo Infinite Backup Utility '</a>
 
 * Halo Infinite (as of 12/2021) has a glitch that can delete your campaign data. This tool creates local backups
 * Includes both a 'Backup' and 'Restore' function
