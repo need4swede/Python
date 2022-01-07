@@ -78,6 +78,8 @@ def set_parameters():
     destination_org = input("Destination org unit you want all of these students transferred to: ")
     if destination_org == "":
         destination_org = "The Bucket"
+    if password == "":
+        password = "Changeme321"
     destination_org = "/" + destination_org
     
 ## DUPLICATES USER_DOWNLOAD.CSV > USER_DOWNLOAD_COPY.CSV
