@@ -23,7 +23,7 @@ FAQ:
 4. What if I leave the destination org unit and password as blank?
 
 * If you don't enter an org unit as your destination, it defaults it to '/The Bucket'. This is a play on the application's name, which together instantiates the phrase "ChuckIt in /The Bucket"
-* If you don't enter a password, the password field will just be left blank
+* If you don't enter a password, the password field will default to 'Changeme321'. This is because a password is required for these changes to go through on the G-Admin side.
 
 5. What if the utility finds a user that has never logged in, but they're not in one of the org units I asked the program to look for?
 
