@@ -69,6 +69,7 @@ def main():
     edit_userquery() # Make the necessary changes to the copy
     save_userquery() # Save the copy as the output file
     cleanup() # Remove temporary files
+    
 ## SET DEFAULT PASSWORD AND DESTINATION ORG UNIT
 def set_parameters():
     global password
@@ -78,6 +79,7 @@ def set_parameters():
     if destination_org == "":
         destination_org = "The Bucket"
     destination_org = "/" + destination_org
+    
 ## DUPLICATES USER_DOWNLOAD.CSV > USER_DOWNLOAD_COPY.CSV
 def copy_userquery():
     global user_query_copy
@@ -99,6 +101,7 @@ def copy_userquery():
     print("\nFILE - Made copy of " + file_name + " to ammend: ")
     print(user_query_copy)
     print()
+    
 ## SORT USER_DOWNLOAD_COPY.CSV BY 'NEVER LOGGED IN'
 ## DELETE ALL ROWS THAT DO NOT INCLUDE 'NEVER SIGNED IN'
 def edit_userquery():
@@ -118,6 +121,7 @@ def edit_userquery():
         print("\nThe file you chose is not a valid user export. Please run the export again from Google Admin and run the tool.\n")
         input("Press any key to exit...")
         exit()
+        
     # SELECT ONLY !='NEVER LOGGED IN' AND SET ALL ROWS UNDER 'STATUS' TO 'DROP'
     # REMOVE ALL ROWS WHERE 'STATUS' INCLUDES 'DROP'
     df = pd.read_csv(user_query_copy)
@@ -168,6 +172,7 @@ def edit_userquery():
     input("\nPress any key to continue...")
     df['Org Unit Path [Required]'] = df['Org Unit Path [Required]'].fillna(destination_org)
     df.to_csv(user_query_copy, index=False)
+    
 ## SAVE OUTPUT FILE
 def save_userquery():
     file_exists = os.path.exists(user_query_copy)
