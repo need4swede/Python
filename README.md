@@ -12,7 +12,7 @@ Here are some of my personal projects made using Python. Hope they'll prove usef
 
 ## List of Scripts
 
-### <a href="https://github.com/need4swede/Python/tree/main/Halo%20Backup%20Utility">' ChuckIt - The Google Admin Inactive-User Transfer Tool '</a>
+### <a href="https://github.com/need4swede/Python/tree/main/Google%20Admin/ChuckIt%20-%20Transfer%20Tool">' ChuckIt - The Google Admin Inactive-User Transfer Tool '</a>
 
 * Searches through a user export (csv) from Google Admin for users who have never signed into their Google accounts and sets them all to a single org unit
 * Includes the function to tell the tool exactly what org units you want parsed, where to send those users and what the user passwords should be.
