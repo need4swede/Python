@@ -18,32 +18,6 @@ def clear_term():
         print()
 clear_term()    
 
-## CHECK PIP AND INSTALL LIBRARIES
-def check_lib():
-    try:
-        env = os.environ.copy()
-        subprocess.run(["pip"],shell=True,env=env,stdout=subprocess.DEVNULL)
-        required = {'numpy', 'pandas'}
-        installed = {pkg.key for pkg in pkg_resources.working_set}
-        missing = required - installed
-        if missing:
-            print("Installing missing packages...\n")
-            python = sys.executable
-            subprocess.check_call([python, '-m', 'pip', 'install', *missing], stdout=subprocess.DEVNULL)
-        else:
-            print("All required packages found!")
-            time.sleep(2)
-            clear_term()
-        pass
-    except:
-        pass
-print("Check for missing packages and install them? (y/n): ", end="")
-ask_lib = input()
-if 'y' in ask_lib:
-    check_lib()
-else:
-    clear_term()
-
 ## EXCEL COLUMN TEMPLATES
 def column_templates():
     global columns_template
