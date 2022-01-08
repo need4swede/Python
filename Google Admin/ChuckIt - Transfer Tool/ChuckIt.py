@@ -1,5 +1,5 @@
 ## LIBRARY IMPORTS ##############################################
-import shutil, os, os.path, platform, time, shutil
+import shutil, os, sys, os.path, platform, time, shutil, subprocess, pkg_resources
 from tkinter.filedialog import askdirectory, askopenfilename
 from tkinter import Tk
 import numpy as np
@@ -15,7 +15,35 @@ def clear_term():
         print()
     elif platform.system() == "Darwin":
         os.system("clear")
-        print()    
+        print()
+clear_term()    
+
+## CHECK PIP AND INSTALL LIBRARIES
+def check_lib():
+    try:
+        env = os.environ.copy()
+        subprocess.run(["pip"],shell=True,env=env,stdout=subprocess.DEVNULL)
+        required = {'numpy', 'pandas'}
+        installed = {pkg.key for pkg in pkg_resources.working_set}
+        missing = required - installed
+        if missing:
+            print("Installing missing packages...\n")
+            python = sys.executable
+            subprocess.check_call([python, '-m', 'pip', 'install', *missing], stdout=subprocess.DEVNULL)
+        else:
+            print("All required packages found!")
+            time.sleep(2)
+            clear_term()
+        pass
+    except:
+        pass
+print("Check for missing packages and install them? (y/n): ", end="")
+ask_lib = input()
+if 'y' in ask_lib:
+    check_lib()
+else:
+    clear_term()
+
 ## EXCEL COLUMN TEMPLATES
 def column_templates():
     global columns_template
@@ -23,6 +51,7 @@ def column_templates():
     columns_template = 'First Name [Required],Last Name [Required],Email Address [Required],Password [Required], Password Hash Function [UPLOAD ONLY], Org Unit Path [Required], New Primary Email [UPLOAD ONLY], Recovery Email, Home Secondary Email, Work Secondary Email, Recovery Phone [MUST BE IN THE E.164 FORMAT], Work Phone, Home Phone, Mobile Phone, Work Address, Home Address, Employee ID, Employee Type, Employee Title, Manager Email, Department, Cost Center, Building ID, Floor Name, Floor Section, Change Password at Next Sign-In, New Status [UPLOAD ONLY], Advanced Protection Program enrollment\n'
     columns_template_school = columns_template = 'School, First Name [Required],Last Name [Required],Email Address [Required],Password [Required], Password Hash Function [UPLOAD ONLY], Org Unit Path [Required], New Primary Email [UPLOAD ONLY], Recovery Email, Home Secondary Email, Work Secondary Email, Recovery Phone [MUST BE IN THE E.164 FORMAT], Work Phone, Home Phone, Mobile Phone, Work Address, Home Address, Employee ID, Employee Type, Employee Title, Manager Email, Department, Cost Center, Building ID, Floor Name, Floor Section, Change Password at Next Sign-In, New Status [UPLOAD ONLY], Advanced Protection Program enrollment\n'
     columns_template_export = 'First Name [Required],Last Name [Required],Email Address [Required],Password [Required], Password Hash Function [UPLOAD ONLY], Org Unit Path [Required], New Primary Email [UPLOAD ONLY], Status [READ ONLY], Last Sign In [READ ONLY], Recovery Email, Home Secondary Email, Work Secondary Email, Recovery Phone [MUST BE IN THE E.164 FORMAT], Work Phone, Home Phone, Mobile Phone, Work Address, Home Address, Employee ID, Employee Type, Employee Title, Manager Email, Department, Cost Center, 2sv Enrolled [READ ONLY], 2sv Enforced [READ ONLY], Building ID, Floor Name, Floor Section, Email Usage [READ ONLY], Drive Usage [READ ONLY], Total Storage [READ ONLY], Change Password at Next Sign-In, New Status [UPLOAD ONLY], Advanced Protection Program enrollment\n'
+
 ## MAIN FUNCTION
 def main():
     start = True
@@ -69,7 +98,7 @@ def main():
     edit_userquery() # Make the necessary changes to the copy
     save_userquery() # Save the copy as the output file
     cleanup() # Remove temporary files
-    
+
 ## SET DEFAULT PASSWORD AND DESTINATION ORG UNIT
 def set_parameters():
     global password
@@ -81,7 +110,7 @@ def set_parameters():
     if password == "":
         password = "Changeme321"
     destination_org = "/" + destination_org
-    
+
 ## DUPLICATES USER_DOWNLOAD.CSV > USER_DOWNLOAD_COPY.CSV
 def copy_userquery():
     global user_query_copy
@@ -103,7 +132,7 @@ def copy_userquery():
     print("\nFILE - Made copy of " + file_name + " to ammend: ")
     print(user_query_copy)
     print()
-    
+
 ## SORT USER_DOWNLOAD_COPY.CSV BY 'NEVER LOGGED IN'
 ## DELETE ALL ROWS THAT DO NOT INCLUDE 'NEVER SIGNED IN'
 def edit_userquery():
@@ -123,7 +152,7 @@ def edit_userquery():
         print("\nThe file you chose is not a valid user export. Please run the export again from Google Admin and run the tool.\n")
         input("Press any key to exit...")
         exit()
-        
+    
     # SELECT ONLY !='NEVER LOGGED IN' AND SET ALL ROWS UNDER 'STATUS' TO 'DROP'
     # REMOVE ALL ROWS WHERE 'STATUS' INCLUDES 'DROP'
     df = pd.read_csv(user_query_copy)
@@ -174,7 +203,7 @@ def edit_userquery():
     input("\nPress any key to continue...")
     df['Org Unit Path [Required]'] = df['Org Unit Path [Required]'].fillna(destination_org)
     df.to_csv(user_query_copy, index=False)
-    
+
 ## SAVE OUTPUT FILE
 def save_userquery():
     file_exists = os.path.exists(user_query_copy)
@@ -203,15 +232,10 @@ def save_userquery():
         print("\nTask Completed Successfully!\n")
         print("FILE - 'users_ChuckIt.csv' saved to ", outputdir + "\n\n")
         input("Press any key to exit...")
+
 ## DELETE USER_QUERY_COPY
 def cleanup():
     if os.path.exists(user_query_copy):
         os.remove(user_query_copy)
     
-        
-
-        
-
-
-
 main()
