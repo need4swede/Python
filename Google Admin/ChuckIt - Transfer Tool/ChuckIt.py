@@ -21,10 +21,7 @@ clear_term()
 ## EXCEL COLUMN TEMPLATES
 def column_templates():
     global columns_template
-    global columns_template_school
     columns_template = 'First Name [Required],Last Name [Required],Email Address [Required],Password [Required], Password Hash Function [UPLOAD ONLY], Org Unit Path [Required], New Primary Email [UPLOAD ONLY], Recovery Email, Home Secondary Email, Work Secondary Email, Recovery Phone [MUST BE IN THE E.164 FORMAT], Work Phone, Home Phone, Mobile Phone, Work Address, Home Address, Employee ID, Employee Type, Employee Title, Manager Email, Department, Cost Center, Building ID, Floor Name, Floor Section, Change Password at Next Sign-In, New Status [UPLOAD ONLY], Advanced Protection Program enrollment\n'
-    columns_template_school = columns_template = 'School, First Name [Required],Last Name [Required],Email Address [Required],Password [Required], Password Hash Function [UPLOAD ONLY], Org Unit Path [Required], New Primary Email [UPLOAD ONLY], Recovery Email, Home Secondary Email, Work Secondary Email, Recovery Phone [MUST BE IN THE E.164 FORMAT], Work Phone, Home Phone, Mobile Phone, Work Address, Home Address, Employee ID, Employee Type, Employee Title, Manager Email, Department, Cost Center, Building ID, Floor Name, Floor Section, Change Password at Next Sign-In, New Status [UPLOAD ONLY], Advanced Protection Program enrollment\n'
-    columns_template_export = 'First Name [Required],Last Name [Required],Email Address [Required],Password [Required], Password Hash Function [UPLOAD ONLY], Org Unit Path [Required], New Primary Email [UPLOAD ONLY], Status [READ ONLY], Last Sign In [READ ONLY], Recovery Email, Home Secondary Email, Work Secondary Email, Recovery Phone [MUST BE IN THE E.164 FORMAT], Work Phone, Home Phone, Mobile Phone, Work Address, Home Address, Employee ID, Employee Type, Employee Title, Manager Email, Department, Cost Center, 2sv Enrolled [READ ONLY], 2sv Enforced [READ ONLY], Building ID, Floor Name, Floor Section, Email Usage [READ ONLY], Drive Usage [READ ONLY], Total Storage [READ ONLY], Change Password at Next Sign-In, New Status [UPLOAD ONLY], Advanced Protection Program enrollment\n'
 
 ## MAIN FUNCTION
 def main():
@@ -43,11 +40,11 @@ def main():
         "\n https://github.com/need4swede/\n")
         print("PURPOSE:")
         print("\n",
-        "This tool was designed to automate the documentation formatting necessary to single out students who have 'Never logged in' and place them all into a seperate organizational unit for bulk edits.\n")
+        "This tool was designed to automate the documentation formatting necessary to single out users who have 'Never logged in' and place them all into a seperate organizational unit for bulk edits.\n")
         print("FUNCTION:\n"
-        "\n The application takes an export of Google users as input and automatically formats it and inserts appropriate student information.\n",
-        "Headers are organized such to match Google's template, Advanced Protection Program enrollment is disabled for all students,\n",
-        "students with log-in activity are excluded from final survey, and the end user is prompted to provide a destination org unit ('/The Bucket' if left blank) alongside a password.\n",
+        "\n The application takes an export of Google users as input and automatically formats it and inserts appropriate user information.\n",
+        "Headers are organized such to match Google's template and Advanced Protection Program enrollment is disabled for all users.\n",
+        "Users with log-in activity are excluded from final survey, and the end user is prompted to provide a destination org unit ('/The Bucket' if left blank) alongside a password.\n",
         "Multiple verification checks are conducted to ensure the data is formulated accurately and that it meets the necessary standard for Google Admin.\n")
         print("CONTACT:\n",
         "\n For questions and inquiries, contact theneed4swede@gmail.com\n")
@@ -77,8 +74,8 @@ def main():
 def set_parameters():
     global password
     global destination_org
-    password = input("\nSet default password for all students who have never signed in to this: ")
-    destination_org = input("Destination org unit you want all of these students transferred to: ")
+    password = input("\nSet default password for all users who have never signed in to this: ")
+    destination_org = input("Destination org unit you want all of these users transferred to: ")
     if destination_org == "":
         destination_org = "The Bucket"
     if password == "":
