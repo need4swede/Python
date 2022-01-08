@@ -12,7 +12,7 @@ FAQ:
 
 * My company had a lot of users who had never logged into their accounts that we needed to get rid of. Because Google Admin doesn't let you sort users by sign-in activity (even though it is listed as a criteria on their table), I had to figure out an alernative method. My solution was to export our users to a file and then create a tool that parses through the users that haven't signed in and put them all into one single org unit. Google Admin requires passwords for this to work, so the tool also resets their passwords. I then created an org unit that matches the unit I'm sending all of these users to, and uploaded the output file to Google. All those users then get transferred to that unit and I can now remove all of these users in bulk. We had tens of thousands of users, so this saved us a ton of time - I am hoping it can help others, too.  
 
-2. What happens if I accidentally import the wrong file?
+2. What happens if I accidentally open the wrong file?
 
 * The utility first checks if the file is in the correct format ('.csv'), and also checks to make sure the formatting of that file is equal to that of a user export from G-Admin. If either one of these checks fail, the program will be upset and tell you to try running it again, accompanied by an appropriate error message.
 
