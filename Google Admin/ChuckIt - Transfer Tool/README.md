@@ -27,4 +27,4 @@ FAQ:
 
 5. What if the utility finds a user that has never logged in, but they're not in one of the org units I asked the program to look for?
 
-* In these cases, the user(s) will still appear in the output file, but their org units will not have changed. This is useful because it allows you to parse through all of these students, but have selective control over which one of them actually get transferred to your new org unit. 
+* In these cases, the user(s) will still appear in the output file, but their org units will not have changed. This is useful because it allows you to parse through all of these users, but have selective control over which one of them actually get transferred to your new org unit. 
