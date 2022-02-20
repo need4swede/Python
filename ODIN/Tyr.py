@@ -19,9 +19,7 @@ from PyQt6.QtCore import *
 global root_dir
 root_dir = os.path.dirname(os.path.abspath(__file__))                        
 with open(root_dir + "/users.csv", 'r') as read_obj:
-    # pass the file object to reader() to get the reader object
     csv_reader = reader(read_obj)
-    # Pass reader object to list() to get a list of lists
     ad_users = list(csv_reader)
     length = len(ad_users)
     user_list = ["Assign To...", "To Realm"]
@@ -63,8 +61,6 @@ if darkdetect.isDark():
     png_refresh = root_dir + "/icon/dark/refresh.png"
     png_update = root_dir + "/icon/dark/update.png"
     png_move = root_dir + "/icon/dark/move.png"
-    # png_logo = root_dir + "/icon/dark/dct_logo_dark.png"
-    # png_db_primary = root_dir + "/icon/dark/dct_logo_dark.png"
     png_logo = root_dir + "/icon/dark/tyr-icon.png"
     png_db_primary = root_dir + "/icon/dark/tyr-icon.png"
 ## INPUT LABELS ###################################################
@@ -224,7 +220,6 @@ class MainWindow(QMainWindow):
         btn_search_item = QAction(QIcon(png_search), "Search",
                                   self)
         btn_search_item.triggered.connect(self.search_item)
-        # btn_search_item.setShortcut("Ctrl+F")
         btn_search_item.setStatusTip("Search")
         toolbar.addAction(btn_search_item)
 
@@ -504,18 +499,6 @@ class MainWindow(QMainWindow):
             notes = self.item_info_window.notes_db2.text()
             database_2.add_row(location, description, package, product,
                                  manufacturer, assigned, status, dates, notes)
-            #database_mech.add_row(location, description,
-                                  #product, status, dates, notes)
-            # Part Num = Quantity            
-            # product = Product
-            # manufacturer = make
-            # Description = Asset Tag
-            # Package = Description
-            # assigned = Assigned
-            # status = Stock
-            # dates = Date
-            # Note = Link/Note
-            # User = Username
 
         self.load_data()
 
@@ -1705,7 +1688,7 @@ if __name__ == "__main__":
     if QDialog.accepted:
         window = MainWindow()
         window.show()
-        window.key = db_primary     # select the electronics page as default
+        window.key = db_primary     # Default Database to load
         window.load_data()
     # NEW
     win = mainWin()
