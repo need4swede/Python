@@ -49,19 +49,31 @@
 				in the interest of ODIN's modular focus.
 			</p>
 			<h3 class="subtitle">Týr</h3>
-			<p class="description">Týr is the front-end of the application - the GUI users will interact with. It's also responsible for taking data and saving it in various formats,
+			<p class="description">Týr is the front-end of the application &ndash; the GUI users will interact with, and is built in PyQt6. It's also responsible for taking data and saving it in various formats,
 				most notably SQL databases and spreadsheet exports. All functions call to Týr; whenever you're using the application, you are interacting with Týr.
 			</p>
 			<p class="subtitle">Here's what Týr looks like:</p>
 			<img class="p-img" src="https://github.com/need4swede/Python/blob/main/ODIN/doc/img/tyr/tyr-front-end.png?raw=true" alt="tyr-gui">
+			<h3 class="subtitle">Mimir</h3>
+			<p class="description">Mimir is the built-in console that's designed to help users perform various tasks and increase productivity. Currently, there's only
+				one module using the console [Týr], so there's no need for a seperate program. But in time, Mimir will run independantly from Týr and will be able to perform
+				various tasks, such as parsing through spreadsheets for entries, ammending them, merging databases and a lot more. For now, however, Mimir is built into Týr.
+			</p>
+			<p class="subtitle">The release of a standalone Mimir console is TBD at this time.</p>
+			<h3 class="subtitle">Heimdall</h3>
+			<p class="description">Heimdall, like Týr, is a GUI &mdash; but whereas Týr is used to manage Mimir's databases, Heimdall is used for the Bifröst
+				module, which manages the various databases over a network and can upload/download data structures. Heimdall can be invoked through Mimir to perform the various tasks, bypassing the need for having
+				to manually manage changes to SQL databases on a server. Heimdall will be using the Django framework.
+			</p>
+			<p class="subtitle">Heimdall is currently in development with no announced release date.</p>
 		</section>
 		<section class="section" id="functions">
 			<span class="anchor" id="jump-functions"></span>
 			<h2>Functions</h2>
-			<section class="functions data-entry">
-				<h3>Data Entry</h3>
+			<section class="functions tyr">
+				<h3>Týr</h3>
 				<i class="fa-solid fa-turn-down arrow-h4"></i>
-				<h4>Default Entries:</h4>
+				<h4>Default Data Entries:</h4>
 				<i class="fa-solid fa-turn-down arrow-p"></i>
 				<p><strong>Site</strong>&mdash; Jobsite / District / Region</p>
 				<p><strong>Selection</strong>&mdash; Asset Category</p>
@@ -74,8 +86,8 @@
 				<p><strong>Info</strong>&mdash; Additional Information about Asset</p>
 				<p><strong>Date</strong>&mdash; Date of Asset's last change</p>
 			</section>
-			<section class="functions help">
-				<h3>Help Function</h3>
+			<section class="functions mimir">
+				<h3>Mimir</h3>
 				<i class="fa-solid fa-turn-down arrow-h4"></i>
 				<h4><span class="color-orange">'Run'</span> the following commands in the console:</h4>
 				<i class="fa-solid fa-turn-down arrow-p"></i>
@@ -83,7 +95,7 @@
 				<p><strong><span class="color-green">help:</span>howto</strong>&mdash; Loads this document</p>
 				<p><strong><span class="color-green">help:</span>shortcuts</strong>&mdash; Lists available keyboard shortcuts</p>
 				<p><strong><span class="color-green">help:</span>tags</strong>&mdash; Lists available run arguments</p>
-				<aside><span class="background-grey">The <span class="color-lightgreen">help</span> function is also natively built into 
+				<aside><span class="background-grey">Mimir's <span class="color-lightgreen">help</span> function is also natively built into 
 					the error handling, and will display appropriate options based on the error</span></aside>
 			</section>
 		</section>
