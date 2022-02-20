@@ -229,6 +229,10 @@ strong {
      font-style: italic;
 }
 
+.heimdall strong {
+     color: black;
+}
+
 /*************************
 /* FOOTER
 /*************************/
@@ -237,7 +241,7 @@ strong {
 /* ADDITIONAL STYLES
 /*******************************************/
 
-@media screen and (max-width: 1400px){
+@media screen and (max-width: 1200px){
      .main-nav-link:first-child {
           display: block;
           margin-top: 0;
@@ -255,7 +259,7 @@ strong {
 
 }
 
-@media screen and (max-width: 1050px){
+@media screen and (max-width: 850px){
      
      .nav-link:first-child {
           display: block;
