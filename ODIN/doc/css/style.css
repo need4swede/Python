@@ -46,6 +46,28 @@ body {
 /******************************************
 /* LAYOUT
 /*******************************************/
+.anchor{
+     display: block;
+     height: 150px; /*same height as header*/
+     margin-top: -150px; /*same height as header*/
+     visibility: hidden;
+   }
+
+.section {
+     margin-left:5%;
+}
+
+.section h3, h4, p{
+     margin-left:5%;
+}
+
+#functions h4 {
+     margin-left: 10%;
+}
+
+#functions p {
+     margin-left: 15%;
+}
 
 /*************************
 /* HEADER
@@ -132,6 +154,8 @@ body {
 /*************************
 /* FIRST SECTION
 /*************************/
+
+
 
 /*************************
 /* FOOTER
