@@ -21,6 +21,19 @@
 /* BASE STYLES
 /*******************************************/
 
+.anchor{
+     display: block;
+     height: 150px; /*same height as header*/
+     margin-top: -150px; /*same height as header*/
+     visibility: hidden;
+}
+
+h2  {
+     border-bottom: 1px solid rgba(0, 0, 0, 1);
+     padding-bottom: 1%;
+}
+
+
 /*************************
 /* ROOT FONT STYLE
 /*************************/
@@ -33,6 +46,7 @@ body {
      font-size: 1.6rem;
      background-color: white;
      color: black;
+     margin-right: 8%;
 }
 
 /*************************
@@ -46,12 +60,6 @@ body {
 /******************************************
 /* LAYOUT
 /*******************************************/
-.anchor{
-     display: block;
-     height: 150px; /*same height as header*/
-     margin-top: -150px; /*same height as header*/
-     visibility: hidden;
-   }
 
 .section {
      margin-left:5%;
@@ -59,14 +67,6 @@ body {
 
 .section h3, h4, p{
      margin-left:5%;
-}
-
-#functions h4 {
-     margin-left: 10%;
-}
-
-#functions p {
-     margin-left: 15%;
 }
 
 /*************************
@@ -141,6 +141,8 @@ body {
 
 .main-title .subtitle {
      margin-bottom: 1%;
+     margin-right: 0;
+     border: none;
 }
 
 .main-title h5 {
@@ -151,11 +153,30 @@ body {
      margin-bottom: 3%;
      font-style: italic;
 }
+
 /*************************
 /* FIRST SECTION
 /*************************/
 
+#introduction p {
+     margin: 2% 10%;
+}
 
+/*************************
+/* SECOND SECTION
+/*************************/
+
+#functions h4, .arrow-h4 {
+     margin-left: 10%;
+}
+
+#functions p, .arrow-p, #functions aside {
+     margin-left: 15%;
+}
+
+#functions aside {
+     font-style: italic;
+}
 
 /*************************
 /* FOOTER
