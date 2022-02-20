@@ -25,7 +25,7 @@
 		<main class="main-title">
 			<h1>ODIN</h1>
 			<div class="underline"></div>
-			<img class="logo" src="img/logo.png" alt="logo.png">
+			<img class="logo" src="doc/img/logo.png" alt="logo.png">
 			<h3 class="subtitle">Omniscient Database for Inventory Notation</h3>
 			<h5 class="description-title">Always keep an eye on what matters</h5>
 			<aside>Python 3.9 / PyQt6 / SQLite3</aside>
