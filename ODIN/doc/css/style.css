@@ -95,6 +95,13 @@ body {
      padding: 0.5% 1%;
 }
 
+.background-black-trans {
+     background-color: rgba(0, 0, 0, 0.8);
+     border-radius: 5px;
+     color: white;
+     padding: 0.5% 1%;
+}
+
 .background-grey {
      background-color: rgb(61, 61, 61);
      border-radius: 0 5px 5px 0;
@@ -104,6 +111,13 @@ body {
 
 .background-green {
      background-color: rgb(22, 187, 0);
+     border-radius: 0 5px 5px 0;
+     color: white;
+     padding: 0.5% 1%;
+}
+
+.background-orange {
+     background-color: orange;
      border-radius: 0 5px 5px 0;
      color: white;
      padding: 0.5% 1%;
@@ -218,10 +232,14 @@ strong {
      color: white;
 }
 
-.main-title .background-green {
+.main-title .background-green, .main-title .background-orange {
      border-radius: 5px;
      padding: 0.5% 5%;
      cursor: pointer;
+}
+
+.main-title .background-orange {
+     padding: 0.5% 4%;
 }
 
 /*************************
