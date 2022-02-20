@@ -40,6 +40,7 @@ if app_icons:
     png_add = root_dir + "/icon/add.png"
     png_delete = root_dir + "/icon/delete.png"
     png_search = root_dir + "/icon/search.png"
+    png_run = root_dir + "/icon/run.png"
     png_info = root_dir + "/icon/information.png"
     png_view = root_dir + "/icon/view.png"
     png_export = root_dir + "/icon/export.png"
@@ -54,6 +55,7 @@ if darkdetect.isDark():
     png_add = root_dir + "/icon/dark/add.png"
     png_delete = root_dir + "/icon/dark/delete.png"
     png_search = root_dir + "/icon/dark/search.png"
+    png_run = root_dir + "/icon/dark/run.png"
     png_info = root_dir + "/icon/dark/information.png"
     png_view = root_dir + "/icon/dark/view.png"
     png_export = root_dir + "/icon/dark/export.png"
@@ -305,16 +307,16 @@ class MainWindow(QMainWindow):
         global search_bar_general
         self.search_box_general = QLineEdit()
         search_bar_general = self.search_box_general
-        self.search_box_general.setPlaceholderText("Run...")
+        self.search_box_general.setPlaceholderText("Console...")
         search_bar_general.hide()
         search_bar_general.setFixedWidth(100)
         search_bar_general.setFixedHeight(20)
 
         global btn_search_general
-        btn_search_general = QPushButton("Search", self)
+        btn_search_general = QPushButton("Run", self)
         btn_search_general.clicked.connect(self.search_general)
         self.search_box_general.returnPressed.connect(btn_search_general.click)
-        btn_search_general.setIcon(QIcon(png_search))
+        btn_search_general.setIcon(QIcon(png_run))
         btn_search_general.hide()
         btn_search_general.setFixedWidth(100)
         btn_search_general.setFixedHeight(35)

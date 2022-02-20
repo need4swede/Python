@@ -50,12 +50,57 @@ body {
 }
 
 /*************************
+/* FONT COLORS
+/*************************/
+
+.color-blue {
+     color: blue;
+}
+
+.color-green {
+     color: green;
+}
+
+.color-lightgreen {
+     color:limegreen;
+}
+
+.color-orange {
+     color: orange;
+}
+
+/*************************
 /* BACKGROUNDS
 /*************************/
+
+.background-black {
+     background-color: black;
+     border-radius: 5px;
+     color: white;
+     padding: 0.5% 1%;
+}
+
+.background-grey {
+     background-color: rgb(61, 61, 61);
+     border-radius: 0 5px 5px 0;
+     color: white;
+     padding: 0.5% 1%;
+}
+
+.background-green {
+     background-color: rgb(22, 187, 0);
+     border-radius: 0 5px 5px 0;
+     color: white;
+     padding: 0.5% 1%;
+}
 
 /*************************
 /* TYPE PROPERTIES
 /*************************/
+
+strong {
+     color: blue;
+}
 
 /******************************************
 /* LAYOUT
@@ -192,7 +237,7 @@ body {
 /* ADDITIONAL STYLES
 /*******************************************/
 
-@media screen and (max-width: 1300px){
+@media screen and (max-width: 1400px){
      .main-nav-link:first-child {
           display: block;
           margin-top: 0;
@@ -227,6 +272,10 @@ body {
      #introduction p {
           margin: 4% 10%;
      }
+
+     #functions aside {
+          display: none;
+     }
 }
 
 @media screen and (max-width: 670px){
@@ -252,6 +301,10 @@ body {
 
      #introduction p {
           margin: 6% 10%;
+     }
+
+     #functions aside {
+          display: none;
      }
 }
 
