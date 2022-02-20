@@ -24,7 +24,7 @@ Here are some of my personal projects made using Python. Hope they'll prove usef
 
 ### <a href="https://need4swede.github.io/Python/ODIN/doc/index.html">' ODIN - Omniscient Database for Inventory Notation '</a>
 
-* A modular asset management utility I.T. teams
+* A modular asset management utility for IT teams
 * See documentation for full list of features
 
 ## License
