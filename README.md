@@ -22,7 +22,7 @@ Here are some of my personal projects made using Python. Hope they'll prove usef
 * Searches through a user export (csv) from Google Admin for users who have never signed into their Google accounts and sets them all to a single org unit
 * Includes the function to tell the tool exactly what org units you want parsed, where to send those users and what the user passwords should be.
 
-### <a href="https://need4swede.github.io/ODIN/doc/index.html">' ODIN - Omniscient Database for Inventory Notation '</a>
+### <a href="https://need4swede.github.io/ODIN/Mimir/Documentation/index.html">' ODIN - Omniscient Database for Inventory Notation '</a>
 
 * A modular asset management utility for IT teams
 * See documentation for full list of features
