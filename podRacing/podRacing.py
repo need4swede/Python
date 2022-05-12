@@ -35,7 +35,7 @@ def create_appDir():
     if not os.path.isdir(appDir):
         os.makedirs(appDir)
     if not os.path.isfile(appDir + "/input.txt"):
-        with open(appDir + "/input.txt", 'w') as inputText:
+        with open(appDir + "/input.txt", 'w', encoding="utf8") as inputText:
             inputText.write('')
             inputText.close()
             errors('no input')
@@ -70,7 +70,7 @@ def fetch_links():
         return
 
     ## If no existing output is found, count the episodes - and write the link tags to the file
-    with open(appDir + "/input.txt", 'r') as inputText:
+    with open(appDir + "/input.txt", 'r', encoding="utf8") as inputText:
         for l_no, line in enumerate(inputText):
             if link_tag in line:
                 count = count + 1
