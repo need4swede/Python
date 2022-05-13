@@ -87,12 +87,40 @@ def fetch_links():
                     output.write(links + "\n")
         print('\nEpisode Count:', count)
 
+##### FETCH TITLES
+## Parses through RSS header and gets episode titles based on 'title' tags
+def fetch_titles():
+
+    ## Parameters
+    count = 0
+    link_tag = "enclosure url="
+    title_tag = "<title>"
+    show_title = ''
+    episode_title = ''
+
+    with open(appDir + "/input.txt", 'r', encoding="utf8") as inputText:
+        for l_no, line in enumerate(inputText):
+            if title_tag in line:
+                if l_no < 6:
+                    show_title = line.split(title_tag)[1].split('</title>')[0].strip()
+                    filename = ''.join(filter(str.isalnum, show_title))
+                    with open(appDir + f"/metadata_{filename}.txt", 'a+') as metadataText:
+                        metadataText.write(f"Show Title\n-\n{show_title}\n-\n")
+                else:
+                    count = count + 1
+                    episode_title = line.split(title_tag)[1].split('</title>')[0].strip()
+                    with open(appDir + f"/metadata_{filename}.txt", 'a+') as metadataText:
+                        metadataText.write(f"\nEpisode No: {count}\n" + f"-\n{episode_title}\n-\n")
+
 ##### AMEND LINKS
 ## Cleans up the link to avoid redirects and unecessary tags
 def amend_links():
 
     ## Fetch the links from RSS header in 'input.txt'
     fetch_links()
+
+    ## Fetch the episode names from RSS header in 'input.txt'
+    fetch_titles()
 
     ## Parameters
     https = "https://"
