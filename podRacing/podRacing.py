@@ -98,6 +98,7 @@ def amend_links():
     https = "https://"
     http = "http://"
     redirect = '/redirect.mp3/'
+    mp3 = '.mp3?'
     count = 0
 
     ## Amend the links retrieved from the RSS header
@@ -115,6 +116,13 @@ def amend_links():
                             linkText.write(links.strip() + "\n")
                         else:
                             linkText.write(http + links.strip() + "\n")
+                elif mp3 in line:
+                    links = line.strip()
+                    if http or https in links:
+                        count = count + 1
+                        links = links.split("://")[1]
+                    with open(appDir + "/links.txt", "a+") as linkText:
+                        linkText.write(http + links.strip() + "\n")
     except FileNotFoundError:
         errors('input empty')
     print(f"Links Amended: {count}")
