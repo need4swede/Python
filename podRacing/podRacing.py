@@ -112,9 +112,9 @@ def amend_links():
                     links = line.split(redirect)[1].split("&")[0]
                     with open(appDir + "/links.txt", "a+") as linkText:
                         if http in line:
-                            linkText.write(links + "\n")
+                            linkText.write(links.strip() + "\n")
                         else:
-                            linkText.write(http + links + "\n")
+                            linkText.write(http + links.strip() + "\n")
     except FileNotFoundError:
         errors('input empty')
     print(f"Links Amended: {count}")
