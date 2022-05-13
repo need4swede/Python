@@ -104,13 +104,16 @@ def fetch_titles():
                 if l_no < 6:
                     show_title = line.split(title_tag)[1].split('</title>')[0].strip()
                     filename = ''.join(filter(str.isalnum, show_title))
+                    if os.path.isfile(appDir + f"/metadata_{filename}.txt"):
+                        os.remove(appDir + f"/metadata_{filename}.txt")
                     with open(appDir + f"/metadata_{filename}.txt", 'a+') as metadataText:
                         metadataText.write(f"Show Title\n-\n{show_title}\n-\n")
                 else:
-                    count = count + 1
                     episode_title = line.split(title_tag)[1].split('</title>')[0].strip()
-                    with open(appDir + f"/metadata_{filename}.txt", 'a+') as metadataText:
-                        metadataText.write(f"\nEpisode No: {count}\n" + f"-\n{episode_title}\n-\n")
+                    if not episode_title == show_title:
+                        count = count + 1
+                        with open(appDir + f"/metadata_{filename}.txt", 'a+') as metadataText:
+                            metadataText.write(f"\nEpisode No: {count}\n" + f"-\n{episode_title}\n-\n")
 
 ##### AMEND LINKS
 ## Cleans up the link to avoid redirects and unecessary tags
