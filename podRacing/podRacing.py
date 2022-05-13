@@ -34,6 +34,14 @@ appDir = str(Path.home()) + '/podRacing'
 def create_appDir():
     if not os.path.isdir(appDir):
         os.makedirs(appDir)
+    if os.path.isfile(appDir + "/links.txt"):
+        print("Existing 'links.txt' file found!\n" 
+            "Running the tool again will overwrite it\n")
+        confirm = input("Confirm overwriting current 'links' file?\nY/N : ")
+        if confirm.lower() == 'Y'.lower():
+            os.remove(appDir + "/links.txt")
+        else:
+            sys.exit()
     if not os.path.isfile(appDir + "/input.txt"):
         with open(appDir + "/input.txt", 'w', encoding="utf8") as inputText:
             inputText.write('')
