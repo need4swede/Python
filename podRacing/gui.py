@@ -178,7 +178,13 @@ class PodRacingGUI(QWidget):
             QMessageBox.StandardButtons.Open,
             QMessageBox.StandardButtons.Cancel
         ) is QMessageBox.StandardButtons.Open: subprocess.Popen(f'explorer /select,{location}')
-
+    
+    def remove_html_tags(self, text):
+        """Remove html tags from a string"""
+        import re
+        clean = re.compile('<.*?>')
+        return re.sub(clean, '', text)
+    
     ##### FETCH RSS
     ## Retrieves RSS data from URL
     def fetch_RSS(self):
@@ -203,6 +209,7 @@ class PodRacingGUI(QWidget):
             self.publish_date.setText(f"{latest_ep_date}")
 
             news_items = []
+            # cleanRSS = self.remove_html_tags(rss_data.text)
             html_tags = {'<a>':'','</a>':'','<p>':'','</p>':'','<strong>':'','</strong>':'', '<span>':'', '</span>':'', '<em>':'', '</em>':'', '<a href=':' ', '>':''}
             if os.path.isfile(self.outputPath + "/episodes.txt"):
                     os.remove(self.outputPath + "/episodes.txt")
@@ -210,14 +217,17 @@ class PodRacingGUI(QWidget):
                 news_item = {}
                 news_item['title'] = item.title.get_text(strip=False).replace('\n', ' ')
                 news_item['description'] = item.description.text
-                for key, value in html_tags.items():
-                    news_item['description'] = news_item['description'].replace(key, value)
+                news_item['description'] = self.remove_html_tags(news_item['description'])
+                # for key, value in html_tags.items():
+                #     news_item['description'] = news_item['description'].replace(key, value)
                 with open(self.outputPath + "/episodes.txt", "a+") as episodesText:
-                    episodesText.write('\n\n-----------------------------\n\n')
-                    episodesText.write('EPISODE TITLE:\n\n')
-                    episodesText.write(news_item['title'])
-                    episodesText.write('\n\nDESCRIPTION:\n\n')
-                    episodesText.write(news_item['description'])
+                    episodesText.write('\n\n----------------------------------------------------------\n')
+                    episodesText.write('\n//////////////////////////////////////////////////////////\n') ## EPISODE DIVIDER
+                    episodesText.write('\n----------------------------------------------------------\n\n')
+                    episodesText.write('############## EPISODE TITLE ##############\n\n')
+                    episodesText.write(news_item['title']) ## TITLE TEXT
+                    episodesText.write('\n\n################ DESCRIPTION ##############\n\n')
+                    episodesText.write(news_item['description']) ## DESCRIPTION TEXT
                 news_items.append(news_item)
 
             ##### LINKS
