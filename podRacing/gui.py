@@ -6,7 +6,7 @@ import os, platform, requests
 from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QStatusBar, QWidget, QLabel, QLineEdit, QPushButton, QProgressBar, QComboBox, QMessageBox, QFileDialog, QVBoxLayout, QHBoxLayout
 from PyQt6.QtGui import QIcon, QCursor, QFont
-from PyQt6.QtCore import Qt, QDir
+from PyQt6.QtCore import Qt, QDir, QCoreApplication
 from bs4 import BeautifulSoup
 from datetime import timedelta
 ##### Dismiss the 'XML' warning
@@ -32,6 +32,9 @@ class PodRacingGUI(QWidget):
         self.isFetching = False
         self.isDownloading = False
         self.setFont(QFont('Helvetica'))
+
+        self.episode_titles = []
+        self.episode_count = 0
 
         # default output path
         self.outputPath = f'{QDir.homePath()}/podRacing'
@@ -87,11 +90,13 @@ class PodRacingGUI(QWidget):
         self.progress_bar = QProgressBar()
         
         # # download options
-        self.download = QComboBox()
-        self.download.setPlaceholderText('Download')
-        self.download.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.download.activated.connect(lambda: self.getContent(0))
-        self.download.setEnabled(False)
+        self.downloadBtn = QPushButton('Download')
+        # self.download = QComboBox()
+        # self.download.setPlaceholderText('Download')
+        self.downloadBtn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        # self.download.activated.connect(self.download_audio)
+        self.downloadBtn.setEnabled(False)
+        self.downloadBtn.clicked.connect(self.download_audio)
         self.button.clicked.connect(self.enable_dl)
         self.button.clicked.connect(self.fetch_RSS)
 
@@ -109,7 +114,7 @@ class PodRacingGUI(QWidget):
         detailSec.addLayout(metaSec)
 
         # download section
-        downloadBtn.addWidget(self.download)
+        downloadBtn.addWidget(self.downloadBtn)
         downloadSec.addWidget(self.progress_bar)
         downloadSec.addSpacing(20)
         downloadSec.addLayout(downloadBtn)
@@ -127,7 +132,7 @@ class PodRacingGUI(QWidget):
         layout.addWidget(self.statusBar)
 
     def enable_dl(self):
-        self.download.setEnabled(True)
+        self.downloadBtn.setEnabled(True)
 
     # set output path slot
     def setOutputPath(self):
@@ -148,9 +153,9 @@ class PodRacingGUI(QWidget):
     # download finished slot
     def download_finished_slot(self):
         # set back the button text
-        self.button.setText('Get')
+        self.button.setText('Fetch')
         # now enable the download options
-        self.download.setDisabled(False)
+        self.downloadBtn.setDisabled(False)
         # unset downloading flag
         self.isDownloading = False
         # reset pogress bar
@@ -161,10 +166,10 @@ class PodRacingGUI(QWidget):
         # update progress bar
         self.progress_bar.setValue(per)
         # adjust the font color to maintain the contrast
-        if per > 52:
-            self.progress_bar.setStyleSheet('QProgressBar { color: #fff }')
+        if per > 89:
+            self.progress_bar.setStyleSheet('QProgressBar { color: #28ab00 }')
         else:
-            self.progress_bar.setStyleSheet('QProgressBar { color: #000 }')
+            self.progress_bar.setStyleSheet('QProgressBar { color: #fff }')
     
     # download complete slot
     def download_complete_slot(self, location):
@@ -180,7 +185,6 @@ class PodRacingGUI(QWidget):
         ) is QMessageBox.StandardButtons.Open: subprocess.Popen(f'explorer /select,{location}')
     
     def remove_html_tags(self, text):
-        """Remove html tags from a string"""
         import re
         clean = re.compile('<.*?>')
         return re.sub(clean, '', text)
@@ -215,6 +219,9 @@ class PodRacingGUI(QWidget):
                     os.remove(self.outputPath + "/episodes.txt")
             for item in items:
                 news_item = {}
+                news_item['title'] = item.title.get_text(strip=False).replace('\n', '')
+                self.episode_titles.append(news_item['title'])
+                self.episode_count = len(items)
                 news_item['title'] = item.title.get_text(strip=False).replace('\n', ' ')
                 news_item['description'] = item.description.text
                 news_item['description'] = self.remove_html_tags(news_item['description'])
@@ -247,11 +254,38 @@ class PodRacingGUI(QWidget):
                 # print(str(list_links[x]).split('url="')[1].split('">')[0])
                 with open(self.outputPath + "/links.txt", "a+") as linksText:
                     linksText.write(dl_link + "\n")
+                
 
 
             self.length.setText(f"Episodes: {link_count}")
             self.urlBox.clear()
             self.urlBox.setPlaceholderText('Paste RSS Feed URL...')
+
+    ##### DOWNLOAD PODCAST
+    ## Retrieves audio files from RSS data
+    def download_audio(self):
+        count = 0
+        count_length = self.episode_count
+        ## BUG - DOESN'T GET PROPER LINK IN RANDOM PODCAST??
+        with open(self.outputPath + "/links.txt") as linksText:
+            for l_no, line in enumerate(linksText):
+                count_per = (count / count_length) * 100
+                self.download_response_slot(count_per)
+                QCoreApplication.processEvents()
+                episode_title = self.episode_titles[l_no]
+                if episode_title == '':
+                    episode_title = l_no + 1
+                link = line
+                r = requests.get(link, allow_redirects=True, stream=True)
+                # with open(self.outputPath + "/episodes.txt", 'r') as episodesText:
+                #     for l_no, line in enumerate(episodesText):
+                open(self.outputPath + f"/{episode_title}.mp3", 'wb').write(r.content)
+                count += 1
+        if count_length == self.episode_count:
+            self.download_finished_slot()
+            self.finished_slot()
+
+
 
 ## APP
 class PodRacingApp(PodRacingGUI):
