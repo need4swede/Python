@@ -195,10 +195,11 @@ def clear_term():
                 os.system("clear")
                 print()
 
-######### WORKFLOW #####
-clear_term()          ## CLEARS THE TERMINAL
-create_appDir()       ## CREATES APP DIRECTORIES & FILES
-amend_links()         ## FETCHES LINKS AND AMENDS THEM IF NEEDED
-clean_appDir()        ## CLEARS TEMP FILES AND RESETS INPUT PARAMS
-count_links()         ## COUNTS THE TOTAL AMOUNT OF LINKS CURRENTLY STORED
-########################
+def main():
+    ######### WORKFLOW #####
+    clear_term()          ## CLEARS THE TERMINAL
+    create_appDir()       ## CREATES APP DIRECTORIES & FILES
+    amend_links()         ## FETCHES LINKS AND AMENDS THEM IF NEEDED
+    clean_appDir()        ## CLEARS TEMP FILES AND RESETS INPUT PARAMS
+    count_links()         ## COUNTS THE TOTAL AMOUNT OF LINKS CURRENTLY STORED
+    ########################
