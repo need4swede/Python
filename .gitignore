@@ -1,2 +1,11 @@
 
 .DS_Store
+fetch.csv
+podRacing/assets/icon.ico
+podRacing/assets/icon.png
+podRacing/class.py
+podRacing/dl.py
+podRacing/fetch.py
+podRacing/fetch_links.py
+podRacing/icon.ico
+podRacing/pause.py

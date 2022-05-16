@@ -67,7 +67,7 @@ class PodRacingGUI(QWidget):
         self.outputBtn = QPushButton('📂  Save to...')
         self.outputBtn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.outputBtn.setToolTip(self.appDir)
-        self.outputBtn.clicked.connect(self.setOutputPath)
+        self.outputBtn.clicked.connect(self.set_download_dir)
 
         # status bar
         self.statusBar = QStatusBar()
@@ -135,68 +135,7 @@ class PodRacingGUI(QWidget):
         layout.addLayout(downloadSec)
         layout.addWidget(self.statusBar)
 
-    def enable_dl(self):
-        self.downloadBtn.setEnabled(True)
-
-    # set output path slot
-    def setOutputPath(self):
-        # update the output path
-        path = str(QFileDialog.getExistingDirectory(self, "Select Output Directory"))
-        if path:
-            self.appDir = path
-            # update tooltip
-            self.outputBtn.setToolTip(path)
-
-    # finished slot
-    def finished_slot(self):
-        # remove progress bar busy indication
-        self.progress_bar.setRange(0, 100)
-        # unset fetching flag
-        self.isFetching = False
-
-    # download finished slot
-    def download_finished_slot(self):
-        # set back the button text
-        self.button.setDisabled(False)
-        self.button.setText('Fetch')
-        self.urlBox.setPlaceholderText('Paste RSS Feed URL...')
-        # now enable the download options
-        self.downloadBtn.setDisabled(True)
-        self.downloadBtn.setText('Download')
-        # unset downloading flag
-        self.isDownloading = False
-        # reset pogress bar
-        self.progress_bar.reset()
-
-    # download response slot
-    def download_response_slot(self, per):
-        # update progress bar
-        self.progress_bar.setValue(per)
-        # adjust the font color to maintain the contrast
-        if per > 89:
-            self.progress_bar.setStyleSheet('QProgressBar { color: #28ab00 }')
-        else:
-            self.progress_bar.setStyleSheet('QProgressBar { color: #fff }')
-    
-    # download complete slot
-    def download_complete_slot(self, location):
-        # use native separators
-        location = QDir.toNativeSeparators(location)
-        # show the success message
-        if self.message.information(
-            self,
-            'Downloaded',
-            f'Download complete!\nFile was successfully downloaded to :\n{location}\n\nOpen the downloaded file now ?',
-            QMessageBox.StandardButtons.Open,
-            QMessageBox.StandardButtons.Cancel
-        ) is QMessageBox.StandardButtons.Open: subprocess.Popen(f'explorer /select,{location}')
-    
-    def remove_html_tags(self, text):
-        clean = re.compile('<.*?>')
-        return re.sub(clean, '', text)
-    
-    ##### FETCH RSS
-    ## Retrieves RSS data from URL
+    ## RETRIEVES RSS DATA FROM URL
     def fetch_RSS(self):
         rss_url = self.urlBox.text()
         if rss_url == '':
@@ -271,8 +210,25 @@ class PodRacingGUI(QWidget):
             self.urlBox.clear()
             self.urlBox.setPlaceholderText('Paste RSS Feed URL...')
 
-    ##### DOWNLOAD PODCAST
-    ## Retrieves audio files from RSS data
+    ## SET DOWNLOAD DIR
+    def set_download_dir(self):
+        # update the output path
+        path = str(QFileDialog.getExistingDirectory(self, "Select Output Directory"))
+        if path:
+            self.appDir = path
+            # update tooltip
+            self.outputBtn.setToolTip(path)
+
+    ## ENABLE DOWNLOAD BUTTON
+    def enable_dl(self):
+        self.downloadBtn.setEnabled(True)
+
+    ## REMOVES HTML TAGS FROM TEXT
+    def remove_html_tags(self, text):
+        clean = re.compile('<.*?>')
+        return re.sub(clean, '', text)
+    
+    ## DOWNLOADS PODCAST AUDIO
     def download_audio(self):
 
         ## INITIALIZE A COUNTER AND TOTAL
@@ -301,7 +257,7 @@ class PodRacingGUI(QWidget):
                 ## SET PROGRESS BAR
                 QCoreApplication.processEvents()
                 count_per = (count / count_length) * 100
-                self.download_response_slot(count_per)
+                self.download_progress(count_per)
 
                 ## GET EPISODE TITLE
                 ## IF TITLE IS BLANK, TITLE THEM NUMERICALLY IN ASC. ORDER
@@ -327,8 +283,49 @@ class PodRacingGUI(QWidget):
         
         ## WHEN DONE
         if count_length == self.episode_count:
-            self.download_finished_slot()
-            self.finished_slot()
+            self.reset_gui()
+
+    ## DOWNLOAD PROGRESS
+    def download_progress(self, per):
+        # update progress bar
+        self.progress_bar.setValue(per)
+        # adjust the font color to maintain the contrast
+        if per > 89:
+            self.progress_bar.setStyleSheet('QProgressBar { color: #28ab00 }')
+        else:
+            self.progress_bar.setStyleSheet('QProgressBar { color: #fff }')
+    
+    ## DOWNLOAD COMPLETE
+    def download_complete(self, location):
+        # use native separators
+        location = QDir.toNativeSeparators(location)
+        # show the success message
+        if self.message.information(
+            self,
+            'Downloaded',
+            f'Download complete!\nFile was successfully downloaded to :\n{location}\n\nOpen the downloaded file now ?',
+            QMessageBox.StandardButtons.Open,
+            QMessageBox.StandardButtons.Cancel
+        ) is QMessageBox.StandardButtons.Open: subprocess.Popen(f'explorer /select,{location}')
+    
+    ## RESET DEFAULT GUI PARAMETERS
+    def reset_gui(self):
+        
+        ## ACTIVATE 'FETCH' BUTTON
+        self.button.setDisabled(False)
+        self.button.setText('Fetch')
+        self.urlBox.setPlaceholderText('Paste RSS Feed URL...')
+
+        ## DE-ACTIVATE 'DOWNLOAD' BUTTON
+        self.downloadBtn.setDisabled(True)
+        self.downloadBtn.setText('Download')
+
+        ## DOWNLOAD STATUS
+        self.isDownloading = False
+
+        ## RESET PROGRESS BAR
+        self.progress_bar.reset()
+
 
 ## APP
 class PodRacingApp(PodRacingGUI):
