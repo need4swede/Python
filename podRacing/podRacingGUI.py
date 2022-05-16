@@ -2,7 +2,7 @@
 
 ##### IMPORTS ################
 import sys, subprocess, warnings
-import os, platform, requests
+import os, platform, requests, re
 from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QStatusBar, QWidget, QLabel, QLineEdit, QPushButton, QProgressBar, QComboBox, QMessageBox, QFileDialog, QVBoxLayout, QHBoxLayout
 from PyQt6.QtGui import QIcon, QCursor, QFont
@@ -36,8 +36,12 @@ class PodRacingGUI(QWidget):
         self.episode_titles = []
         self.episode_count = 0
 
-        # default output path
-        self.outputPath = f'{QDir.homePath()}/podRacing'
+        ## APPLICATION DIRECTORY
+        self.appDir = f'{QDir.homePath()}/podRacing'
+        self.input_file = self.appDir + "/input.txt"
+        self.output_file = self.appDir + "/output.txt"
+        self.links_file = self.appDir + "/links.txt"
+        self.episodes_file = self.appDir + "/episodes.txt"
 
         # setup some window specific things
         self.setWindowTitle('Podcast Obtainable Data Racer')
@@ -62,7 +66,7 @@ class PodRacingGUI(QWidget):
         ## OUTPUT PATH
         self.outputBtn = QPushButton('📂  Save to...')
         self.outputBtn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.outputBtn.setToolTip(self.outputPath)
+        self.outputBtn.setToolTip(self.appDir)
         self.outputBtn.clicked.connect(self.setOutputPath)
 
         # status bar
@@ -139,7 +143,7 @@ class PodRacingGUI(QWidget):
         # update the output path
         path = str(QFileDialog.getExistingDirectory(self, "Select Output Directory"))
         if path:
-            self.outputPath = path
+            self.appDir = path
             # update tooltip
             self.outputBtn.setToolTip(path)
 
@@ -185,7 +189,6 @@ class PodRacingGUI(QWidget):
         ) is QMessageBox.StandardButtons.Open: subprocess.Popen(f'explorer /select,{location}')
     
     def remove_html_tags(self, text):
-        import re
         clean = re.compile('<.*?>')
         return re.sub(clean, '', text)
     
@@ -197,6 +200,7 @@ class PodRacingGUI(QWidget):
             print(self.urlBox.placeholderText())
         else:
             try:
+                QCoreApplication.processEvents()
                 rss_feed = requests.get(rss_url)
                 rss_data = BeautifulSoup(rss_feed.content, features="lxml")
             except Exception:
@@ -204,6 +208,13 @@ class PodRacingGUI(QWidget):
                 self.urlBox.setPlaceholderText('Invalid URL!')
                 return
             
+            ## REMOVE PREVIOUS TXT FILES
+            if os.path.isfile(self.episodes_file):
+                os.remove(self.episodes_file)
+            if os.path.isfile(self.links_file):
+                os.remove(self.links_file)
+
+            ## SHOW METADATA
             items = rss_data.findAll('item')
             show_title = rss_data.find('title').text
             show_author = rss_data.find('itunes:author').text
@@ -212,47 +223,43 @@ class PodRacingGUI(QWidget):
             self.author.setText(f"{show_author}")
             self.publish_date.setText(f"{latest_ep_date}")
 
-            news_items = []
+            rss_items = []
             # cleanRSS = self.remove_html_tags(rss_data.text)
-            html_tags = {'<a>':'','</a>':'','<p>':'','</p>':'','<strong>':'','</strong>':'', '<span>':'', '</span>':'', '<em>':'', '</em>':'', '<a href=':' ', '>':''}
-            if os.path.isfile(self.outputPath + "/episodes.txt"):
-                    os.remove(self.outputPath + "/episodes.txt")
+            
+            
             for item in items:
-                news_item = {}
-                news_item['title'] = item.title.get_text(strip=False).replace('\n', '')
-                self.episode_titles.append(news_item['title'])
+                rss_item = {}
+                rss_item['title'] = item.title.get_text(strip=False).replace('\n', '')
+                self.episode_titles.append(rss_item['title'])
                 self.episode_count = len(items)
-                news_item['title'] = item.title.get_text(strip=False).replace('\n', ' ')
-                news_item['description'] = item.description.text
-                news_item['description'] = self.remove_html_tags(news_item['description'])
-                # for key, value in html_tags.items():
-                #     news_item['description'] = news_item['description'].replace(key, value)
-                with open(self.outputPath + "/episodes.txt", "a+") as episodesText:
+                rss_item['title'] = item.title.get_text(strip=False).replace('\n', ' ')
+                rss_item['description'] = item.description.text
+                rss_item['description'] = self.remove_html_tags(rss_item['description'])
+                
+                with open(self.episodes_file, "a+") as episodesText:
                     episodesText.write('\n\n----------------------------------------------------------\n')
                     episodesText.write('\n//////////////////////////////////////////////////////////\n') ## EPISODE DIVIDER
                     episodesText.write('\n----------------------------------------------------------\n\n')
                     episodesText.write('############## EPISODE TITLE ##############\n\n')
-                    episodesText.write(news_item['title']) ## TITLE TEXT
+                    episodesText.write(rss_item['title']) ## TITLE TEXT
                     episodesText.write('\n\n################ DESCRIPTION ##############\n\n')
-                    episodesText.write(news_item['description']) ## DESCRIPTION TEXT
-                news_items.append(news_item)
+                    episodesText.write(rss_item['description']) ## DESCRIPTION TEXT
+                rss_items.append(rss_item)
 
             ##### LINKS
             list_links = []
             for link in rss_data.findAll('enclosure'):
                 list_links.append(link)
-            with open(self.outputPath + "/input.txt", "w") as inputText:
+            with open(self.input_file, "w") as inputText:
                 inputText.write(rss_data.prettify(formatter="html"))
 
             link_count = 0
-            if os.path.isfile(self.outputPath + "/links.txt"):
-                    os.remove(self.outputPath + "/links.txt")
+            
 
             for x in range(len(list_links)):
                 link_count += 1
                 dl_link = str(list_links[x]).split('url="')[1].split('">')[0]
-                # print(str(list_links[x]).split('url="')[1].split('">')[0])
-                with open(self.outputPath + "/links.txt", "a+") as linksText:
+                with open(self.links_file, "a+") as linksText:
                     linksText.write(dl_link + "\n")
                 
 
@@ -264,28 +271,58 @@ class PodRacingGUI(QWidget):
     ##### DOWNLOAD PODCAST
     ## Retrieves audio files from RSS data
     def download_audio(self):
+
+        ## INITIALIZE A COUNTER AND TOTAL
         count = 0
         count_length = self.episode_count
-        ## BUG - DOESN'T GET PROPER LINK IN RANDOM PODCAST??
-        with open(self.outputPath + "/links.txt") as linksText:
+
+        ## REMOVE SPECIAL CHARACTERS FROM SHOW TITLE AND SET SHOW DIR
+        QCoreApplication.processEvents()
+        self.downloadBtn.setEnabled(False)
+        show_title = self.title.text()
+        show_title = re.sub(r"[^a-zA-Z0-9]+"," ",show_title)
+        show_dir = (f"{self.appDir}/{show_title}")
+        
+        ## CREATE DOWNLOAD DIR WITH SHOW TITLE AS NAME
+        if not os.path.isdir(show_dir):
+            os.makedirs(show_dir)
+        
+        ## GET DL LINK FROM 'LINKS.TXT' FILE
+        ## DOWNLOAD EACH FILE AND RENAME TO MATCH EPISODE NAME
+        with open(self.links_file) as linksText:
             for l_no, line in enumerate(linksText):
+
+                ## SET PROGRESS BAR
+                QCoreApplication.processEvents()
                 count_per = (count / count_length) * 100
                 self.download_response_slot(count_per)
-                QCoreApplication.processEvents()
+
+                ## GET EPISODE TITLE
+                ## IF TITLE IS BLANK, TITLE THEM NUMERICALLY IN ASC. ORDER
                 episode_title = self.episode_titles[l_no]
                 if episode_title == '':
-                    episode_title = l_no + 1
+                    episode_title = f"Episode {l_no + 1}"
+                
+                ## GET DL LINK AND REMOVE TEXT AFTER AUDIO FORMAT
                 link = line
+                if not link.endswith('.mp3') or link.endswith('.wav') or link.endswith('.flac'):
+                    link = link.split('?')[0]
+                
+                ## GETS AUDIO FORMAT
+                format = link.split('.')[-1]
+                format = re.sub(r"[^a-zA-Z0-9.]+","",format)
+
+                ## DOWNLOAD AUDIO FILE WITH EPISODE NAME TO SHOW DIR
                 r = requests.get(link, allow_redirects=True, stream=True)
-                # with open(self.outputPath + "/episodes.txt", 'r') as episodesText:
-                #     for l_no, line in enumerate(episodesText):
-                open(self.outputPath + f"/{episode_title}.mp3", 'wb').write(r.content)
+                QCoreApplication.processEvents()
+                open(f"{show_dir}/{episode_title}.{format}", 'wb').write(r.content)
                 count += 1
+                
+        
+        ## WHEN DONE
         if count_length == self.episode_count:
             self.download_finished_slot()
             self.finished_slot()
-
-
 
 ## APP
 class PodRacingApp(PodRacingGUI):
