@@ -166,7 +166,7 @@ class PodRacingGUI(QWidget):
             self.publish_date.setText(f"{latest_ep_date}")
 
             rss_items = []
-            # cleanRSS = self.remove_html_tags(rss_data.text)
+            # cleanRSS = self.clean_text(rss_data.text)
             
             
             for item in items:
@@ -176,7 +176,7 @@ class PodRacingGUI(QWidget):
                 self.episode_count = len(items)
                 rss_item['title'] = item.title.get_text(strip=False).replace('\n', ' ')
                 rss_item['description'] = item.description.text
-                rss_item['description'] = self.remove_html_tags(rss_item['description'])
+                rss_item['description'] = self.clean_text(rss_item['description'], 'html')
                 
                 with open(self.episodes_file, "a+") as episodesText:
                     episodesText.write('\n\n----------------------------------------------------------\n')
@@ -223,26 +223,38 @@ class PodRacingGUI(QWidget):
     def enable_dl(self):
         self.downloadBtn.setEnabled(True)
 
-    ## REMOVES HTML TAGS FROM TEXT
-    def remove_html_tags(self, text):
-        clean = re.compile('<.*?>')
-        return re.sub(clean, '', text)
+    ## REMOVE SPECIAL CHARACTERS FROM TEXT
+    def clean_text(self, input, type):
+        if type.lower() == 'html':
+            clean = re.compile('<.*?>')
+            return re.sub(clean, '', input)
+        if type.lower() == 'show_title':
+            clean = re.sub(r"[^a-zA-Z0-9]+"," ",input)
+            return clean
     
-    ## DOWNLOADS PODCAST AUDIO
+    ## DETECT AUDIO FORMAT
+    def audio_format(self, file):
+        self.format = file.split('.')[-1]
+        self.format = re.sub(r"[^a-zA-Z0-9.]+","",self.format)
+        return self.format
+
+    ## DOWNLOAD PODCAST AUDIO
     def download_audio(self):
 
         ## INITIALIZE A COUNTER AND TOTAL
         count = 0
         count_length = self.episode_count
 
-        ## REMOVE SPECIAL CHARACTERS FROM SHOW TITLE AND SET SHOW DIR
+        ## UPDATE GUI STATUS
         QCoreApplication.processEvents()
         self.downloadBtn.setText('Downloading')
         self.urlBox.setPlaceholderText('Please Wait...')
         self.button.setDisabled(True)
         self.downloadBtn.setEnabled(False)
+
+        ## REMOVE SPECIAL CHARACTERS FROM SHOW TITLE AND SET SHOW DIR
         show_title = self.title.text()
-        show_title = re.sub(r"[^a-zA-Z0-9]+"," ",show_title)
+        show_title = self.clean_text(show_title, 'show_title')
         show_dir = (f"{self.appDir}/{show_title}")
         
         ## CREATE DOWNLOAD DIR WITH SHOW TITLE AS NAME
@@ -265,14 +277,13 @@ class PodRacingGUI(QWidget):
                 if episode_title == '':
                     episode_title = f"Episode {l_no + 1}"
                 
-                ## GET DL LINK AND REMOVE TEXT AFTER AUDIO FORMAT
+                ## GET DOWNLOAD LINK
                 link = line
                 if not link.endswith('.mp3') or link.endswith('.wav') or link.endswith('.flac'):
                     link = link.split('?')[0]
                 
-                ## GETS AUDIO FORMAT
-                format = link.split('.')[-1]
-                format = re.sub(r"[^a-zA-Z0-9.]+","",format)
+                ## GET AUDIO FORMAT
+                format = self.audio_format(link)
 
                 ## DOWNLOAD AUDIO FILE WITH EPISODE NAME TO SHOW DIR
                 r = requests.get(link, allow_redirects=True, stream=True)
@@ -325,7 +336,6 @@ class PodRacingGUI(QWidget):
 
         ## RESET PROGRESS BAR
         self.progress_bar.reset()
-
 
 ## APP
 class PodRacingApp(PodRacingGUI):
