@@ -3,6 +3,7 @@
 ##### IMPORTS ################
 import sys, subprocess, warnings
 import os, platform, requests, re
+import pandas as pd
 from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QStatusBar, QWidget, QLabel, QLineEdit, QPushButton, QProgressBar, QComboBox, QMessageBox, QFileDialog, QVBoxLayout, QHBoxLayout
 from PyQt6.QtGui import QIcon, QCursor, QFont
@@ -170,7 +171,7 @@ class PodRacingGUI(QWidget):
             show_author = rss_data.find('itunes:author').text
             latest_ep_date = rss_data.find('pubdate').text.split('-')[0]
 
-            ## REMOVE PREVIOUS TXT FILES
+            ## REMOVE PREVIOUS TXT FILES AND CLEAR EPISODE TITLES / COUNT
             self.clear_RSS()
             self.episode_titles = []
             self.episode_count = 0
@@ -188,6 +189,11 @@ class PodRacingGUI(QWidget):
                 rss_item['description'] = item.description.text
                 rss_item['description'] = self.clean_text(rss_item['description'], 'html')
                 
+                ## WRITE EPISODE TITLES TO FILE
+                with open(self.appDir + "/episode_titles.txt", "a+") as titlesText:
+                    titlesText.write(rss_item['title'])
+                    titlesText.write('\n')
+
                 ## WRITE TO FILE
                 with open(self.episodes_file, "a+") as episodesText:
                     episodesText.write('\n\n----------------------------------------------------------\n')
@@ -359,8 +365,10 @@ class PodRacingGUI(QWidget):
         ## RESET PROGRESS BAR
         self.progress_bar.reset()
 
+    ## QUIT APPLICATION
     def quit(self):
         sys.exit()
+
 ## APP
 class PodRacingApp(PodRacingGUI):
     def __init__(self, directory):
