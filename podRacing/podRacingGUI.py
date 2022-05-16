@@ -157,9 +157,12 @@ class PodRacingGUI(QWidget):
     # download finished slot
     def download_finished_slot(self):
         # set back the button text
+        self.button.setDisabled(False)
         self.button.setText('Fetch')
+        self.urlBox.setPlaceholderText('Paste RSS Feed URL...')
         # now enable the download options
-        self.downloadBtn.setDisabled(False)
+        self.downloadBtn.setDisabled(True)
+        self.downloadBtn.setText('Download')
         # unset downloading flag
         self.isDownloading = False
         # reset pogress bar
@@ -278,6 +281,9 @@ class PodRacingGUI(QWidget):
 
         ## REMOVE SPECIAL CHARACTERS FROM SHOW TITLE AND SET SHOW DIR
         QCoreApplication.processEvents()
+        self.downloadBtn.setText('Downloading')
+        self.urlBox.setPlaceholderText('Please Wait...')
+        self.button.setDisabled(True)
         self.downloadBtn.setEnabled(False)
         show_title = self.title.text()
         show_title = re.sub(r"[^a-zA-Z0-9]+"," ",show_title)
