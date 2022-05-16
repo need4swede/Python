@@ -62,9 +62,15 @@ class PodRacingGUI(QWidget):
         # download section
         downloadSec = QHBoxLayout()
         downloadBtn = QVBoxLayout()
+        
+        ## QUIT SECTION
+        self.quitBtn = QPushButton('Quit')
+        self.quitBtn.setFixedSize(60,32)
+        self.quitBtn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.quitBtn.clicked.connect(self.quit)
 
         ## OUTPUT PATH
-        self.outputBtn = QPushButton('📂  Save to...')
+        self.outputBtn = QPushButton('📂 Save Directory')
         self.outputBtn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.outputBtn.setToolTip(self.appDir)
         self.outputBtn.clicked.connect(self.set_download_dir)
@@ -77,6 +83,7 @@ class PodRacingGUI(QWidget):
 
         ## ADDRESS BAR & FETCH BUTTON
         self.urlBox = QLineEdit()
+        self.urlBox.setFixedSize(300, 33)
         self.urlBox.setPlaceholderText('Paste RSS Feed URL...')
         self.button = QPushButton('Fetch')
         self.button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -95,6 +102,7 @@ class PodRacingGUI(QWidget):
         
         # # download options
         self.downloadBtn = QPushButton('Download')
+        self.downloadBtn.setFixedSize(120,32)
         # self.download = QComboBox()
         # self.download.setPlaceholderText('Download')
         self.downloadBtn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -118,22 +126,24 @@ class PodRacingGUI(QWidget):
         detailSec.addLayout(metaSec)
 
         # download section
+        downloadSec.addWidget(self.quitBtn)
         downloadBtn.addWidget(self.downloadBtn)
         downloadSec.addWidget(self.progress_bar)
         downloadSec.addSpacing(20)
         downloadSec.addLayout(downloadBtn)
-
+        
         # status bar
         self.statusBar.setSizeGripEnabled(False)
         self.statusBar.addPermanentWidget(self.outputBtn)
 
         # add content to parent layout
         layout.addLayout(topBar)
-        layout.addSpacing(20)
+        layout.addSpacing(5)
         layout.addLayout(detailSec)
         layout.addSpacing(5)
         layout.addLayout(downloadSec)
-        layout.addWidget(self.statusBar)
+        layout.addSpacing(5)
+        layout.addWidget(self.outputBtn)
 
     ## RETRIEVES RSS DATA FROM URL
     def fetch_RSS(self):
@@ -161,10 +171,9 @@ class PodRacingGUI(QWidget):
             latest_ep_date = rss_data.find('pubdate').text.split('-')[0]
 
             ## REMOVE PREVIOUS TXT FILES
-            if os.path.isfile(self.episodes_file):
-                os.remove(self.episodes_file)
-            if os.path.isfile(self.links_file):
-                os.remove(self.links_file)
+            self.clear_RSS()
+            self.episode_titles = []
+            self.episode_count = 0
 
             ## EXPORT EPISODE DATA TO FILE
             rss_items = []
@@ -215,6 +224,16 @@ class PodRacingGUI(QWidget):
             self.urlBox.clear()
             self.urlBox.setPlaceholderText('Paste RSS Feed URL...')
 
+    ## CLEAR RSS DATA
+    def clear_RSS(self):
+        if os.path.isfile(self.input_file):
+            os.remove(self.input_file)
+        if os.path.isfile(self.episodes_file):
+            os.remove(self.episodes_file)
+        if os.path.isfile(self.links_file):
+            os.remove(self.links_file)
+        return
+
     ## SET DOWNLOAD DIR
     def set_download_dir(self):
         # update the output path
@@ -255,6 +274,7 @@ class PodRacingGUI(QWidget):
         self.downloadBtn.setText('Downloading')
         self.urlBox.setPlaceholderText('Please Wait...')
         self.button.setDisabled(True)
+        self.outputBtn.setEnabled(False)
         self.downloadBtn.setEnabled(False)
 
         ## REMOVE SPECIAL CHARACTERS FROM SHOW TITLE AND SET SHOW DIR
@@ -295,8 +315,7 @@ class PodRacingGUI(QWidget):
                 QCoreApplication.processEvents()
                 open(f"{show_dir}/{episode_title}.{format}", 'wb').write(r.content)
                 count += 1
-                
-        
+
         ## WHEN DONE
         if count_length == self.episode_count:
             self.reset_gui()
@@ -306,11 +325,8 @@ class PodRacingGUI(QWidget):
         # update progress bar
         self.progress_bar.setValue(per)
         # adjust the font color to maintain the contrast
-        if per > 89:
-            self.progress_bar.setStyleSheet('QProgressBar { color: #28ab00 }')
-        else:
-            self.progress_bar.setStyleSheet('QProgressBar { color: #fff }')
-    
+        self.progress_bar.setStyleSheet('QProgressBar { color: #fff }')
+            
     ## DOWNLOAD COMPLETE
     def download_complete(self, location):
         # use native separators
@@ -327,8 +343,9 @@ class PodRacingGUI(QWidget):
     ## RESET DEFAULT GUI PARAMETERS
     def reset_gui(self):
         
-        ## ACTIVATE 'FETCH' BUTTON
-        self.button.setDisabled(False)
+        ## ACTIVATE 'FETCH' AND 'DIRECTORY' BUTTONS
+        self.button.setEnabled(True)
+        self.outputBtn.setEnabled(True)
         self.button.setText('Fetch')
         self.urlBox.setPlaceholderText('Paste RSS Feed URL...')
 
@@ -342,6 +359,8 @@ class PodRacingGUI(QWidget):
         ## RESET PROGRESS BAR
         self.progress_bar.reset()
 
+    def quit(self):
+        sys.exit()
 ## APP
 class PodRacingApp(PodRacingGUI):
     def __init__(self, directory):
@@ -357,13 +376,6 @@ class PodRacingApp(PodRacingGUI):
         if not os.path.isdir(self.appDir):
             os.makedirs(self.appDir)
         if os.path.isfile(self.links_file):
-            # print("Existing 'links.txt' file found!\n" 
-            #     "Running the tool again will overwrite it\n")
-            # confirm = input("Confirm overwriting current 'links' file?\nY/N : ")
-            # if confirm.lower() == 'Y'.lower():
-            #     os.remove(self.links_file)
-            # else:
-            #     sys.exit()
             os.remove(self.links_file)
         if not os.path.isfile(self.input_file):
             with open(self.input_file, 'w', encoding="utf8") as inputText:
