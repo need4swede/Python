@@ -137,39 +137,40 @@ class PodRacingGUI(QWidget):
 
     ## RETRIEVES RSS DATA FROM URL
     def fetch_RSS(self):
+
+        ## GET RSS FEED
         rss_url = self.urlBox.text()
         if rss_url == '':
             print(self.urlBox.placeholderText())
         else:
-            try:
+            
+            ## VALIDATE RSS FEED
+            try: ## GOOD!
                 QCoreApplication.processEvents()
                 rss_feed = requests.get(rss_url)
                 rss_data = BeautifulSoup(rss_feed.content, features="lxml")
-            except Exception:
+            except Exception: ## BAD!
                 self.urlBox.clear()
                 self.urlBox.setPlaceholderText('Invalid URL!')
                 return
-            
+
+            ## GET METADATA
+            items = rss_data.findAll('item')
+            show_title = rss_data.find('title').text
+            show_author = rss_data.find('itunes:author').text
+            latest_ep_date = rss_data.find('pubdate').text.split('-')[0]
+
             ## REMOVE PREVIOUS TXT FILES
             if os.path.isfile(self.episodes_file):
                 os.remove(self.episodes_file)
             if os.path.isfile(self.links_file):
                 os.remove(self.links_file)
 
-            ## SHOW METADATA
-            items = rss_data.findAll('item')
-            show_title = rss_data.find('title').text
-            show_author = rss_data.find('itunes:author').text
-            latest_ep_date = rss_data.find('pubdate').text.split('-')[0]
-            self.title.setText(f"{show_title}")
-            self.author.setText(f"{show_author}")
-            self.publish_date.setText(f"{latest_ep_date}")
-
+            ## EXPORT EPISODE DATA TO FILE
             rss_items = []
-            # cleanRSS = self.clean_text(rss_data.text)
-            
-            
             for item in items:
+
+                ## GET EPISODE TITLE & DESCRIPTION
                 rss_item = {}
                 rss_item['title'] = item.title.get_text(strip=False).replace('\n', '')
                 self.episode_titles.append(rss_item['title'])
@@ -178,6 +179,7 @@ class PodRacingGUI(QWidget):
                 rss_item['description'] = item.description.text
                 rss_item['description'] = self.clean_text(rss_item['description'], 'html')
                 
+                ## WRITE TO FILE
                 with open(self.episodes_file, "a+") as episodesText:
                     episodesText.write('\n\n----------------------------------------------------------\n')
                     episodesText.write('\n//////////////////////////////////////////////////////////\n') ## EPISODE DIVIDER
@@ -186,26 +188,29 @@ class PodRacingGUI(QWidget):
                     episodesText.write(rss_item['title']) ## TITLE TEXT
                     episodesText.write('\n\n################ DESCRIPTION ##############\n\n')
                     episodesText.write(rss_item['description']) ## DESCRIPTION TEXT
+                
+                ## APPEND METADATA
                 rss_items.append(rss_item)
 
-            ##### LINKS
+            ## GET AUDIO LINKS
+            link_count = 0
             list_links = []
             for link in rss_data.findAll('enclosure'):
                 list_links.append(link)
             with open(self.input_file, "w") as inputText:
                 inputText.write(rss_data.prettify(formatter="html"))
 
-            link_count = 0
-            
-
+            ## EXPORT AUDIO LINKS TO FILE
             for x in range(len(list_links)):
                 link_count += 1
                 dl_link = str(list_links[x]).split('url="')[1].split('">')[0]
                 with open(self.links_file, "a+") as linksText:
                     linksText.write(dl_link + "\n")
                 
-
-
+            ## UPDATE GUI
+            self.title.setText(f"{show_title}")
+            self.author.setText(f"{show_author}")
+            self.publish_date.setText(f"{latest_ep_date}")
             self.length.setText(f"Episodes: {link_count}")
             self.urlBox.clear()
             self.urlBox.setPlaceholderText('Paste RSS Feed URL...')
