@@ -4,7 +4,7 @@
 import sys, subprocess, warnings
 import os, platform, requests, re, time
 from pathlib import Path
-from PyQt6.QtWidgets import QApplication, QStatusBar, QWidget, QLabel, QLineEdit, QPushButton, QProgressBar, QComboBox, QMessageBox, QFileDialog, QVBoxLayout, QHBoxLayout
+from PyQt6.QtWidgets import QApplication, QStatusBar, QWidget, QLabel, QLineEdit, QPushButton, QProgressBar, QComboBox, QMessageBox, QFileDialog, QVBoxLayout, QHBoxLayout, QCheckBox
 from PyQt6.QtGui import QIcon, QCursor, QFont
 from PyQt6.QtCore import Qt, QDir, QCoreApplication
 from bs4 import BeautifulSoup
@@ -76,6 +76,12 @@ class PodRacingGUI(QWidget):
         self.outputBtn.clicked.connect(self.set_download_dir)
         self.outputBtn.setEnabled(False)
 
+        ## FLOATING TOOLS
+        self.option_overwrite = QCheckBox('Overwrite', self)
+        self.option_overwrite.move(15, 255)
+        self.option_overwrite.show()
+        self.option_overwrite.setCursor(QCursor(Qt.CursorShape.DragCopyCursor))
+
         # status bar
         self.statusBar = QStatusBar()
 
@@ -104,6 +110,7 @@ class PodRacingGUI(QWidget):
         # # download options
         self.downloadBtn = QPushButton('Download')
         self.downloadBtn.setFixedSize(120,32)
+
         # self.download = QComboBox()
         # self.download.setPlaceholderText('Download')
         self.downloadBtn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -143,7 +150,7 @@ class PodRacingGUI(QWidget):
         layout.addLayout(detailSec)
         layout.addSpacing(5)
         layout.addLayout(downloadSec)
-        layout.addSpacing(5)
+        layout.addSpacing(35)
         layout.addWidget(self.outputBtn)
 
     ## RETRIEVES RSS DATA FROM URL
@@ -337,13 +344,30 @@ class PodRacingGUI(QWidget):
                 ## DOWNLOAD AUDIO FILE WITH EPISODE NAME TO SHOW DIR
                 r = requests.get(link, allow_redirects=True, stream=True)
                 QCoreApplication.processEvents()
-                if not os.path.isfile(f"{show_dir}/{episode_title}.{format}"):
-                    open(f"{show_dir}/{episode_title}.{format}", 'wb').write(r.content)
-                    print(f"{episode_title}")
-                    count += 1
+
+                ## OVERWRITE EXISTING DOWNLOADS
+                if self.option_overwrite.isChecked():
+                    if count < 1:
+                        confirm_overwrite = QMessageBox.question(self, 'Warning', 'This will overwrite existing files\nDo you wish to continue?',
+                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                    if confirm_overwrite == QMessageBox.StandardButton.Yes:
+                        open(f"{show_dir}/{episode_title}.{format}", 'wb').write(r.content)
+                        print(f"{episode_title}")
+                        count += 1
+                    else:
+                        self.reset_gui()
+                        return
+
+                ## IF DOWNLOAD EXISTS, SKIP TO NEXT ONE (NO-OVERWRITING)
                 else:
-                    print(f"Skipped: {episode_title}")
-                    skip_count +=1
+                    if not os.path.isfile(f"{show_dir}/{episode_title}.{format}"):
+                        open(f"{show_dir}/{episode_title}.{format}", 'wb').write(r.content)
+                        print(f"{episode_title}")
+                        count += 1
+                    else:
+                        print(f"Skipped: {episode_title}")
+                        count += 1
+                        skip_count +=1
 
         ## WHEN DONE
         if count_length == self.episode_count:
@@ -351,7 +375,7 @@ class PodRacingGUI(QWidget):
             timer_duration_min = (timer_add - timer_start) / 60
             print('\nDownload Complete!\n')
             print(
-                f"{count}/{count_length} Files Downloaded | "
+                f"{count - skip_count}/{count_length} Files Downloaded | "
                 f"{skip_count}/{count_length} Skipped | "
                 f"Duration {int(timer_duration_min)} minutes and {timer_duration_sec:0.1f} seconds"
             )
