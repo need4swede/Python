@@ -286,6 +286,7 @@ class PodRacingGUI(QWidget):
 
         ## INITIALIZE A COUNTER AND TOTAL
         count = 0
+        skip_count = 0
         count_length = self.episode_count
 
         ## UPDATE GUI STATUS
@@ -338,15 +339,22 @@ class PodRacingGUI(QWidget):
                 QCoreApplication.processEvents()
                 if not os.path.isfile(f"{show_dir}/{episode_title}.{format}"):
                     open(f"{show_dir}/{episode_title}.{format}", 'wb').write(r.content)
-                count += 1
-                print(f"{episode_title}")
+                    print(f"{episode_title}")
+                    count += 1
+                else:
+                    print(f"Skipped: {episode_title}")
+                    skip_count +=1
 
         ## WHEN DONE
         if count_length == self.episode_count:
             timer_duration_sec = (timer_add - timer_start)
             timer_duration_min = (timer_add - timer_start) / 60
             print('\nDownload Complete!\n')
-            print(f"{count}/{count_length} Files Downloaded | Duration {int(timer_duration_min)} minutes and {timer_duration_sec:0.1f} seconds")
+            print(
+                f"{count}/{count_length} Files Downloaded | "
+                f"{skip_count}/{count_length} Skipped | "
+                f"Duration {int(timer_duration_min)} minutes and {timer_duration_sec:0.1f} seconds"
+            )
             self.reset_gui()
 
     ## DOWNLOAD PROGRESS
