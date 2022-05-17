@@ -74,6 +74,7 @@ class PodRacingGUI(QWidget):
         self.outputBtn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.outputBtn.setToolTip(self.appDir)
         self.outputBtn.clicked.connect(self.set_download_dir)
+        self.outputBtn.setEnabled(False)
 
         # status bar
         self.statusBar = QStatusBar()
@@ -228,6 +229,7 @@ class PodRacingGUI(QWidget):
             self.length.setText(f"Episodes: {link_count}")
             self.urlBox.clear()
             self.urlBox.setPlaceholderText('Paste RSS Feed URL...')
+            self.outputBtn.setEnabled(True)
 
     ## CLEAR RSS DATA
     def clear_RSS(self):
@@ -362,7 +364,7 @@ class PodRacingGUI(QWidget):
         
         ## ACTIVATE 'FETCH' AND 'DIRECTORY' BUTTONS
         self.button.setEnabled(True)
-        self.outputBtn.setEnabled(True)
+        self.outputBtn.setEnabled(False)
         self.button.setText('Fetch')
         self.urlBox.setPlaceholderText('Paste RSS Feed URL...')
 
