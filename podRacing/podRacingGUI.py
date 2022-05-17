@@ -2,7 +2,7 @@
 
 ##### IMPORTS ################
 import sys, subprocess, warnings
-import os, platform, requests, re
+import os, platform, requests, re, time
 from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QStatusBar, QWidget, QLabel, QLineEdit, QPushButton, QProgressBar, QComboBox, QMessageBox, QFileDialog, QVBoxLayout, QHBoxLayout
 from PyQt6.QtGui import QIcon, QCursor, QFont
@@ -263,6 +263,18 @@ class PodRacingGUI(QWidget):
             clean = re.sub(r"[^a-zA-Z0-9]+"," ",input)
             return clean
     
+    ## GENERATE DOWNLOAD LINK
+    def generate_link(self, link):
+        podtrac = 'www.podtrac.com/pts/redirect.mp3/'
+        radiolab = 'radiolab_podcast'
+        if podtrac in link:
+            link = f"http://{link.split(podtrac)[-1]}"
+        if radiolab in link:
+            link = link.split('/radiolab_podcast/')[1]
+            link = f"http://wnyc-origin-iad.streamguys1.com/radiolab_podcast/{link}"
+            link = link.split('?')[0]
+        return link
+
     ## DETECT AUDIO FORMAT
     def audio_format(self, file):
         self.format = file.split('.')[-1]
@@ -277,6 +289,7 @@ class PodRacingGUI(QWidget):
         count_length = self.episode_count
 
         ## UPDATE GUI STATUS
+        print(f"\nBeginning Download...\n\nEpisodes Found: {count_length}\n")
         QCoreApplication.processEvents()
         self.downloadBtn.setText('Downloading')
         self.urlBox.setPlaceholderText('Please Wait...')
@@ -295,10 +308,12 @@ class PodRacingGUI(QWidget):
         
         ## GET DL LINK FROM 'LINKS.TXT' FILE
         ## DOWNLOAD EACH FILE AND RENAME TO MATCH EPISODE NAME
+        timer_start = time.perf_counter()
         with open(self.links_file) as linksText:
             for l_no, line in enumerate(linksText):
 
                 ## SET PROGRESS BAR
+                timer_add = time.perf_counter()
                 QCoreApplication.processEvents()
                 count_per = (count / count_length) * 100
                 self.download_progress(count_per)
@@ -311,22 +326,12 @@ class PodRacingGUI(QWidget):
                 
                 ## GET DOWNLOAD LINK
                 link = line
-                link_type = ''
-                if 'radiolab_podcast' in link:
-                    link_type = 'radiolab'
-                    link = f"https://{link.split('redirect.mp3/')[1]}".split('/radiolab_podcast/')[1]
-                    link = f"http://wnyc-origin-iad.streamguys1.com/radiolab_podcast/{link}"
+                link = self.generate_link(link)
+                if not link.endswith('.mp3') or link.endswith('.wav') or link.endswith('.flac'):
                     link = link.split('?')[0]
-                    print(link)
-                else:
-                    if not link.endswith('.mp3') or link.endswith('.wav') or link.endswith('.flac'):
-                        link = link.split('?')[0]
                 
                 ## GET AUDIO FORMAT
-                if not link_type == 'radiolab':
-                    format = self.audio_format(link)
-                else:
-                    format = 'mp3'
+                format = self.audio_format(link)
 
                 ## DOWNLOAD AUDIO FILE WITH EPISODE NAME TO SHOW DIR
                 r = requests.get(link, allow_redirects=True, stream=True)
@@ -334,15 +339,20 @@ class PodRacingGUI(QWidget):
                 if not os.path.isfile(f"{show_dir}/{episode_title}.{format}"):
                     open(f"{show_dir}/{episode_title}.{format}", 'wb').write(r.content)
                 count += 1
+                print(f"{episode_title}")
 
         ## WHEN DONE
         if count_length == self.episode_count:
+            timer_duration_sec = (timer_add - timer_start)
+            timer_duration_min = (timer_add - timer_start) / 60
+            print('\nDownload Complete!\n')
+            print(f"{count}/{count_length} Files Downloaded | Duration {int(timer_duration_min)} minutes and {timer_duration_sec:0.1f} seconds")
             self.reset_gui()
 
     ## DOWNLOAD PROGRESS
     def download_progress(self, per):
         # update progress bar
-        self.progress_bar.setValue(per)
+        self.progress_bar.setValue(int(per))
         # adjust the font color to maintain the contrast
         self.progress_bar.setStyleSheet('QProgressBar { color: #fff }')
             
