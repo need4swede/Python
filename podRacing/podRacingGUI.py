@@ -42,6 +42,7 @@ class PodRacingGUI(QWidget):
         self.output_file = self.appDir + "/output.txt"
         self.links_file = self.appDir + "/links.txt"
         self.episodes_file = self.appDir + "/episodes.txt"
+        self.episodes_list_file = self.appDir + "/episode_titles.txt"
 
         # setup some window specific things
         self.setWindowTitle('Podcast Obtainable Data Racer')
@@ -81,11 +82,14 @@ class PodRacingGUI(QWidget):
         self.option_overwrite.move(15, 255)
         self.option_overwrite.show()
         self.option_overwrite.setCursor(QCursor(Qt.CursorShape.DragCopyCursor))
+        self.option_overwrite.setToolTip(
+            "Overwrites existing episodes\n"
+            "Default behavior is to skip an episode if it has already been downloaded")
 
-        # status bar
-        self.statusBar = QStatusBar()
+        ## ADDITIONAL OPTIONS BAR
+        self.additionalOptions = QStatusBar()
 
-        # message box
+        ## MESSAGE BOX
         self.message = QMessageBox()
 
         ## ADDRESS BAR & FETCH BUTTON
@@ -94,27 +98,22 @@ class PodRacingGUI(QWidget):
         self.urlBox.setPlaceholderText('Paste RSS Feed URL...')
         self.button = QPushButton('Fetch')
         self.button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        # self.button.clicked.connect(podRacing.main)
 
         ## METADATA TAGS
         self.title = QLabel('Title')
         self.author = QLabel('Author')
         self.length = QLabel('Episode Count')
-        self.publish_date = QLabel('Last Updated')
+        self.publish_date = QLabel('Last Updated:')
         self.credit = QLabel('PODRacer | by Mike Afshari')
         self.credit.setStyleSheet('font-size: 11px; font-weight: bold;')
 
-        # progress bar
+        ## DOWNLOAD PROGRESS BAR
         self.progress_bar = QProgressBar()
         
-        # # download options
+        ## DOWNLOAD BUTTON
         self.downloadBtn = QPushButton('Download')
         self.downloadBtn.setFixedSize(120,32)
-
-        # self.download = QComboBox()
-        # self.download.setPlaceholderText('Download')
         self.downloadBtn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        # self.download.activated.connect(self.download_audio)
         self.downloadBtn.setEnabled(False)
         self.downloadBtn.clicked.connect(self.download_audio)
         self.button.clicked.connect(self.enable_dl)
@@ -140,9 +139,9 @@ class PodRacingGUI(QWidget):
         downloadSec.addSpacing(20)
         downloadSec.addLayout(downloadBtn)
         
-        # status bar
-        self.statusBar.setSizeGripEnabled(False)
-        self.statusBar.addPermanentWidget(self.outputBtn)
+        ## ADDITIONAL OPTIONS
+        self.additionalOptions.setSizeGripEnabled(False)
+        self.additionalOptions.addPermanentWidget(self.outputBtn)
 
         # add content to parent layout
         layout.addLayout(topBar)
@@ -175,8 +174,21 @@ class PodRacingGUI(QWidget):
             ## GET METADATA
             items = rss_data.findAll('item')
             show_title = rss_data.find('title').text
-            show_author = rss_data.find('itunes:author').text
-            latest_ep_date = rss_data.find('pubdate').text.split('-')[0]
+            try:
+                show_author = rss_data.find('itunes:author').text
+            except AttributeError:
+                try:
+                    show_author = self.shorten_text(rss_data.find('description').text, 50)
+                except AttributeError:
+                    self.reset_gui()
+                    self.urlBox.clear()
+                    self.urlBox.setPlaceholderText('Invalid URL!')
+                    return
+            latest_ep_date = rss_data.find('pubdate').text
+            if '-' in latest_ep_date:
+                latest_ep_date = rss_data.find('pubdate').text.split('-')[0]
+            elif '+' in latest_ep_date:
+                latest_ep_date = rss_data.find('pubdate').text.split('+')[0]
 
             ## REMOVE PREVIOUS TXT FILES AND CLEAR EPISODE TITLES / COUNT
             self.clear_RSS()
@@ -197,7 +209,7 @@ class PodRacingGUI(QWidget):
                 rss_item['description'] = self.clean_text(rss_item['description'], 'html')
                 
                 ## WRITE EPISODE TITLES TO FILE
-                with open(self.appDir + "/episode_titles.txt", "a+") as titlesText:
+                with open(self.episodes_list_file, "a+") as titlesText:
                     titlesText.write(rss_item['title'])
                     titlesText.write('\n')
 
@@ -230,9 +242,13 @@ class PodRacingGUI(QWidget):
                     linksText.write(dl_link + "\n")
                 
             ## UPDATE GUI
+            if show_title == '':
+                show_title = 'Unknown'
             self.title.setText(f"{show_title}")
+            if show_author == '':
+                show_author = 'Unknown'
             self.author.setText(f"{show_author}")
-            self.publish_date.setText(f"{latest_ep_date}")
+            self.publish_date.setText(f"Last Updated: {latest_ep_date}")
             self.length.setText(f"Episodes: {link_count}")
             self.urlBox.clear()
             self.urlBox.setPlaceholderText('Paste RSS Feed URL...')
@@ -246,6 +262,8 @@ class PodRacingGUI(QWidget):
             os.remove(self.episodes_file)
         if os.path.isfile(self.links_file):
             os.remove(self.links_file)
+        if os.path.isfile(self.episodes_list_file):
+            os.remove(self.episodes_list_file)
         return
 
     ## SET DOWNLOAD DIR
@@ -261,15 +279,22 @@ class PodRacingGUI(QWidget):
     def enable_dl(self):
         self.downloadBtn.setEnabled(True)
 
+    ## SHORTENS TEXT TO A SET LIMIT
+    def shorten_text(self, text, length, suffix='...'):
+        if len(text) <= length:
+            return text
+        else:
+            return ' '.join(text[:length+1].split(' ')[0:-1]) + suffix
+
     ## REMOVE SPECIAL CHARACTERS FROM TEXT
-    def clean_text(self, input, type):
+    def clean_text(self, text, type):
         if type.lower() == 'html':
             clean = re.compile('<.*?>')
-            return re.sub(clean, '', input)
-        if type.lower() == 'show_title':
-            clean = re.sub(r"[^a-zA-Z0-9]+"," ",input)
+            return re.sub(clean, '', text)
+        if type.lower() == '_title':
+            clean = re.sub(r"[^a-zA-Z0-9 ,*\u2019-]+"," ",text)
             return clean
-    
+
     ## GENERATE DOWNLOAD LINK
     def generate_link(self, link):
         podtrac = 'www.podtrac.com/pts/redirect.mp3/'
@@ -307,7 +332,7 @@ class PodRacingGUI(QWidget):
 
         ## REMOVE SPECIAL CHARACTERS FROM SHOW TITLE AND SET SHOW DIR
         show_title = self.title.text()
-        show_title = self.clean_text(show_title, 'show_title')
+        show_title = self.clean_text(show_title, '_title')
         show_dir = (f"{self.appDir}/{show_title}")
         
         ## CREATE DOWNLOAD DIR WITH SHOW TITLE AS NAME
@@ -349,10 +374,11 @@ class PodRacingGUI(QWidget):
                 if self.option_overwrite.isChecked():
                     if count < 1:
                         confirm_overwrite = QMessageBox.question(self, 'Warning', 'This will overwrite existing files\nDo you wish to continue?',
-                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
                     if confirm_overwrite == QMessageBox.StandardButton.Yes:
-                        open(f"{show_dir}/{episode_title}.{format}", 'wb').write(r.content)
                         print(f"{episode_title}")
+                        episode_title = self.clean_text(episode_title, '_title')
+                        open(f"{show_dir}/{episode_title}.{format}", 'wb').write(r.content)
                         count += 1
                     else:
                         self.reset_gui()
@@ -361,11 +387,12 @@ class PodRacingGUI(QWidget):
                 ## IF DOWNLOAD EXISTS, SKIP TO NEXT ONE (NO-OVERWRITING)
                 else:
                     if not os.path.isfile(f"{show_dir}/{episode_title}.{format}"):
-                        open(f"{show_dir}/{episode_title}.{format}", 'wb').write(r.content)
                         print(f"{episode_title}")
+                        episode_title = self.clean_text(episode_title, '_title')
+                        open(f"{show_dir}/{episode_title}.{format}", 'wb').write(r.content)
                         count += 1
                     else:
-                        print(f"Skipped: {episode_title}")
+                        print(f"SKIPPED: [{episode_title}]")
                         count += 1
                         skip_count +=1
 
