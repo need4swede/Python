@@ -3,7 +3,6 @@
 ##### IMPORTS ################
 import sys, subprocess, warnings
 import os, platform, requests, re
-import pandas as pd
 from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QStatusBar, QWidget, QLabel, QLineEdit, QPushButton, QProgressBar, QComboBox, QMessageBox, QFileDialog, QVBoxLayout, QHBoxLayout
 from PyQt6.QtGui import QIcon, QCursor, QFont
@@ -310,16 +309,28 @@ class PodRacingGUI(QWidget):
                 
                 ## GET DOWNLOAD LINK
                 link = line
-                if not link.endswith('.mp3') or link.endswith('.wav') or link.endswith('.flac'):
+                link_type = ''
+                if 'radiolab_podcast' in link:
+                    link_type = 'radiolab'
+                    link = f"https://{link.split('redirect.mp3/')[1]}".split('/radiolab_podcast/')[1]
+                    link = f"http://wnyc-origin-iad.streamguys1.com/radiolab_podcast/{link}"
                     link = link.split('?')[0]
+                    print(link)
+                else:
+                    if not link.endswith('.mp3') or link.endswith('.wav') or link.endswith('.flac'):
+                        link = link.split('?')[0]
                 
                 ## GET AUDIO FORMAT
-                format = self.audio_format(link)
+                if not link_type == 'radiolab':
+                    format = self.audio_format(link)
+                else:
+                    format = 'mp3'
 
                 ## DOWNLOAD AUDIO FILE WITH EPISODE NAME TO SHOW DIR
                 r = requests.get(link, allow_redirects=True, stream=True)
                 QCoreApplication.processEvents()
-                open(f"{show_dir}/{episode_title}.{format}", 'wb').write(r.content)
+                if not os.path.isfile(f"{show_dir}/{episode_title}.{format}"):
+                    open(f"{show_dir}/{episode_title}.{format}", 'wb').write(r.content)
                 count += 1
 
         ## WHEN DONE
