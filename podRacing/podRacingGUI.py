@@ -4,11 +4,10 @@
 import sys, subprocess, warnings
 import os, platform, requests, re, time
 from pathlib import Path
-from PyQt6.QtWidgets import QApplication, QStatusBar, QWidget, QLabel, QLineEdit, QPushButton, QProgressBar, QComboBox, QMessageBox, QFileDialog, QVBoxLayout, QHBoxLayout, QCheckBox
+from PyQt6.QtWidgets import QApplication, QStatusBar, QWidget, QLabel, QLineEdit, QPushButton, QProgressBar, QMessageBox, QFileDialog, QVBoxLayout, QHBoxLayout, QCheckBox
 from PyQt6.QtGui import QIcon, QCursor, QFont
 from PyQt6.QtCore import Qt, QDir, QCoreApplication
 from bs4 import BeautifulSoup
-from datetime import timedelta
 ##### Dismiss the 'XML' warning
 warnings.filterwarnings("ignore", 
 category=UserWarning, module='bs4')
