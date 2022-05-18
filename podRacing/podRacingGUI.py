@@ -14,6 +14,12 @@ warnings.filterwarnings("ignore",
 category=UserWarning, module='bs4')
 #############################
 
+## TODO
+# SETTING A DIFFERENT DIRECTORY SEPERATES META AND AUDIO
+# MERGE HTML/CSS/JS INTO ONE DOCUMENT FOR EASIER SHARING
+# ORGANIZE FETCH FILES (HIDE THEM IN SHOW META FOLDER??)
+# ADDITIONAL MENU BUTTONS (OPEN META AFTER FETCH, COPY LINKS, ETC.)
+
 ##### INFORMATION ##########
 
 ## Takes an RSS feed url as input
@@ -195,6 +201,11 @@ class PodRacingGUI(QWidget):
             self.episode_titles = []
             self.episode_count = 0
 
+            ## CREATE SHOW DIRECTORY
+            show_dir = f"{self.appDir}/{self.clean_text(show_title, '_title')}"
+            if not os.path.isdir(show_dir):
+                os.makedirs(show_dir)
+            
             ## EXPORT EPISODE DATA TO FILE
             rss_items = []
             for item in items:
@@ -204,8 +215,8 @@ class PodRacingGUI(QWidget):
                 rss_item['title'] = item.title.get_text(strip=False).replace('\n', '')
                 self.episode_titles.append(rss_item['title'])
                 self.episode_count = len(items)
-                rss_item['title'] = item.title.get_text(strip=False).replace('\n', ' ')
-                rss_item['description'] = item.description.text
+                rss_item['title'] = item.title.get_text(strip=False).replace('\n', ' ').replace('\r', '')
+                rss_item['description'] = item.description.text.replace('\r', '')
                 rss_item['description'] = self.clean_text(rss_item['description'], 'html')
                 
                 ## WRITE EPISODE TITLES TO FILE
@@ -241,11 +252,12 @@ class PodRacingGUI(QWidget):
                 dl_link = str(list_links[x]).split('url="')[1].split('">')[0]
                 with open(self.links_file, "a+") as linksText:
                     linksText.write(dl_link + "\n")
-            
+
             ## BUILD HTML
             rss_html = pd.DataFrame(rss_items, columns=['title', 'description'])
-            rss_html.to_html(self.appDir + '/fetch.html',index=0, encoding='utf-8')
-            self.build_html(rss_html)
+            rss_html.index +=1
+            rss_html.index = rss_html.index.values[::-1]
+            self.build_html(rss_html, self.clean_text(show_title, '_title'), show_dir)
             
             ## UPDATE GUI
             if show_title == '':
@@ -261,29 +273,62 @@ class PodRacingGUI(QWidget):
             self.outputBtn.setEnabled(True)
 
     ## BUILD HTML FROM FETCHED RSS
-    def build_html(self, rss):
+    def build_html(self, rss, title, directory):
+
+        title = title.lower().replace(' ', '')
+        directory = f"{directory}/metadata"
+        if not os.path.isdir(directory):
+            os.makedirs(directory)
+            if not os.path.isdir(f"{directory}/assets"):
+                os.makedirs(f"{directory}/assets")
+
         pd.set_option('colheader_justify', 'center')   # FOR TABLE <th>
 
+        js_string = '''
+const header = document.querySelector('tr');
+const columns = header.children;
+
+let title = columns[1].innerText.toUpperCase();
+title = title.replace('TITLE', 'EPISODE TITLE');
+columns[1].innerText = title;
+
+let description = columns[2].innerText.toUpperCase();
+description = description.replace('DESCRIPTION', 'EPISODE DESCRIPTION');
+columns[2].innerText = description;
+
+columns[0].innerText = 'EPISODE ORDER';
+'''
+
         css_string = '''
-/* includes alternating gray and white with on-hover color *
+body {
+    background: black;
+    text-align: center;
+}
 .mystyle {
     font-size: 11pt; 
-    font-family: Arial;
+    font-family: 'Sans Sarif';
     border-collapse: collapse; 
     border: 1px solid silver;
-
+    background: #19191a;
+    color: #ededed;
 }
-
 .mystyle td, th {
-    padding: 5px;
+    font-family: 'PT Sans', sans-serif;
+    font-weight: 700;
+    padding: 25px 15px;
+    margin: 10px;
+    text-align: center;
 }
-
+.mystyle td + td {
+    font-weight: 400;
+    text-align: left;
+}
 .mystyle tr:nth-child(even) {
-    background: #E0E0E0;
+    background: #2b2b2b;
 }
-
 .mystyle tr:hover {
-    background: silver;
+    background: black;
+    color: white;
     cursor: pointer;
 }
 '''
@@ -292,24 +337,31 @@ class PodRacingGUI(QWidget):
 <html>
     <head>
         <title>PODRacing Export</title>
-        <link rel="stylesheet" type="text/css" href="style.css"/>
-        <style>
+        <link rel="stylesheet" type="text/css" href="assets/style.css"/>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
             #STYLING
         </style>
     </head>
     <body>
         {table}
     </body>
+    <script src="assets/script.js"></script>
 </html>
 '''
 
         ## OUTPUT AN HTML FILE
-        with open(self.appDir+ '/index.html', 'w') as htmlFile:
+        with open(f"{directory}/{title}.html", 'w+') as htmlFile:
             htmlFile.write(html_string.format(table=rss.to_html(classes='mystyle')))
         
         ## OUTPUT A CSS FILE
-        with open(self.appDir+ '/style.css', 'w') as cssFile:
+        with open(f"{directory}/assets/style.css", 'w+') as cssFile:
             cssFile.write(css_string)
+        
+        ## OUTPUT JAVASCRIPT FILE
+        with open(f"{directory}/assets/script.js", 'w+') as jsFile:
+            jsFile.write(js_string)
 
         return
 
@@ -351,7 +403,7 @@ class PodRacingGUI(QWidget):
             clean = re.compile('<.*?>')
             return re.sub(clean, '', text).strip()
         if type.lower() == '_title':
-            clean = re.sub(r"[^a-zA-Z0-9 ,*\u2019-]+"," ",text)
+            clean = re.sub(r"[^a-zA-Z0-9 ,*\u2019-]+"," ",text).strip()
             return clean
 
     ## GENERATE DOWNLOAD LINK
@@ -397,6 +449,8 @@ class PodRacingGUI(QWidget):
         ## CREATE DOWNLOAD DIR WITH SHOW TITLE AS NAME
         if not os.path.isdir(show_dir):
             os.makedirs(show_dir)
+        if not os.path.isdir(f"{show_dir}/audio"):
+            os.makedirs(f"{show_dir}/audio")
         
         ## GET DL LINK FROM 'LINKS.TXT' FILE
         ## DOWNLOAD EACH FILE AND RENAME TO MATCH EPISODE NAME
@@ -415,6 +469,7 @@ class PodRacingGUI(QWidget):
                 episode_title = self.episode_titles[l_no]
                 if episode_title == '':
                     episode_title = f"Episode {l_no + 1}"
+                _title = self.clean_text(episode_title, '_title')
                 
                 ## GET DOWNLOAD LINK
                 link = line
@@ -436,8 +491,7 @@ class PodRacingGUI(QWidget):
                                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
                     if confirm_overwrite == QMessageBox.StandardButton.Yes:
                         print(f"{episode_title}")
-                        episode_title = self.clean_text(episode_title, '_title')
-                        open(f"{show_dir}/{episode_title}.{format}", 'wb').write(r.content)
+                        open(f"{show_dir}/audio/{_title}.{format}", 'wb').write(r.content)
                         count += 1
                     else:
                         self.reset_gui()
@@ -445,10 +499,9 @@ class PodRacingGUI(QWidget):
 
                 ## IF DOWNLOAD EXISTS, SKIP TO NEXT ONE (NO-OVERWRITING)
                 else:
-                    if not os.path.isfile(f"{show_dir}/{episode_title}.{format}"):
+                    if not os.path.isfile(f"{show_dir}/audio/{_title}.{format}"):
                         print(f"{episode_title}")
-                        episode_title = self.clean_text(episode_title, '_title')
-                        open(f"{show_dir}/{episode_title}.{format}", 'wb').write(r.content)
+                        open(f"{show_dir}/audio/{_title}.{format}", 'wb').write(r.content)
                         count += 1
                     else:
                         print(f"SKIPPED: [{episode_title}]")
@@ -465,6 +518,7 @@ class PodRacingGUI(QWidget):
                 f"{skip_count}/{count_length} Skipped | "
                 f"Duration {int(timer_duration_min)} minutes and {timer_duration_sec:0.1f} seconds"
             )
+            self.download_complete(show_title, show_dir)
             self.reset_gui()
 
     ## DOWNLOAD PROGRESS
@@ -473,20 +527,22 @@ class PodRacingGUI(QWidget):
         self.progress_bar.setValue(int(per))
         # adjust the font color to maintain the contrast
         self.progress_bar.setStyleSheet('QProgressBar { color: #fff }')
-            
+
     ## DOWNLOAD COMPLETE
-    def download_complete(self, location):
-        # use native separators
+    def download_complete(self, title, location):
+
+        ## USE NATIVE SEPARATORS
         location = QDir.toNativeSeparators(location)
-        # show the success message
+
+        ## PROMPT TO OPEN DIRECTORY
         if self.message.information(
             self,
             'Downloaded',
-            f'Download complete!\nFile was successfully downloaded to :\n{location}\n\nOpen the downloaded file now ?',
-            QMessageBox.StandardButtons.Open,
-            QMessageBox.StandardButtons.Cancel
-        ) is QMessageBox.StandardButtons.Open: subprocess.Popen(f'explorer /select,{location}')
-    
+            f'Download Complete!\n\n{title} has been saved to:\n{location}\n\nNavigate to folder?',
+            QMessageBox.StandardButton.Open,
+            QMessageBox.StandardButton.Cancel
+        ) is QMessageBox.StandardButton.Open: subprocess.Popen(["open", str(location)])
+
     ## RESET DEFAULT GUI PARAMETERS
     def reset_gui(self):
         
