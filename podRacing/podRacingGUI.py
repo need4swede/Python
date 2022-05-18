@@ -223,7 +223,7 @@ class PodRacingGUI(QWidget):
                     episodesText.write('\n\n################ DESCRIPTION ##############\n\n')
                     episodesText.write(rss_item['description']) ## DESCRIPTION TEXT
                 
-                ## APPEND METADATA
+                ## REMOVE '\n' FROM DESCRIPTION AND APPEND METADATA
                 rss_item['description'] = rss_item['description'].replace('\n', ' ')
                 rss_items.append(rss_item)
 
