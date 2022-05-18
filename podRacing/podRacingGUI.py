@@ -2,8 +2,7 @@
 
 ##### IMPORTS ################
 import sys, subprocess, warnings
-from turtle import left
-import os, platform, requests, re, time
+import os, platform, requests, re, time, base64, shutil
 import pandas as pd
 from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QStatusBar, QWidget, QLabel, QLineEdit, QPushButton, QProgressBar, QMessageBox, QFileDialog, QVBoxLayout, QHBoxLayout, QCheckBox
@@ -17,9 +16,11 @@ category=UserWarning, module='bs4')
 
 ## TODO
 # SETTING A DIFFERENT DIRECTORY SEPERATES META AND AUDIO
-# MERGE HTML/CSS/JS INTO ONE DOCUMENT FOR EASIER SHARING
-# ORGANIZE FETCH FILES (HIDE THEM IN SHOW META FOLDER??)
 # ADDITIONAL MENU BUTTONS (OPEN META AFTER FETCH, COPY LINKS, ETC.)
+
+## DONE
+# MERGE HTML/CSS/JS INTO ONE DOCUMENT FOR EASIER SHARING
+# ORGANIZE FETCH FILES
 
 ##### INFORMATION ##########
 
@@ -286,6 +287,12 @@ class PodRacingGUI(QWidget):
             self.urlBox.setPlaceholderText('Paste RSS Feed URL...')
             self.outputBtn.setEnabled(True)
 
+            ## COPY TXT FILES TO SHOW METADATA FOLDER
+            show_title = self.clean_text(show_title, '_title').lower().replace(' ', '')
+            shutil.copy(self.episodes_file, f"{show_dir}/metadata/{show_title}_episodes.txt")
+            shutil.copy(self.episodes_list_file, f"{show_dir}/metadata/{show_title}_episode_titles.txt")
+            shutil.copy(self.links_file, f"{show_dir}/metadata/{show_title}_links.txt")
+
     ## BUILD HTML FROM FETCHED RSS
     def build_html(self, rss, title, directory):
 
@@ -293,8 +300,8 @@ class PodRacingGUI(QWidget):
         directory = f"{directory}/metadata"
         if not os.path.isdir(directory):
             os.makedirs(directory)
-            if not os.path.isdir(f"{directory}/assets"):
-                os.makedirs(f"{directory}/assets")
+        if not os.path.isdir(f"{directory}/assets"):
+            os.makedirs(f"{directory}/assets")
 
         pd.set_option('colheader_justify', 'center')   # FOR TABLE <th>
 
@@ -351,6 +358,7 @@ body {
     <script src="assets/script.js"></script>
 </html>
 '''
+        # html_string = html_string.replace('href="assets/style.css"', f'href="{directory}/assets/style.css')
 
         ## OUTPUT AN HTML FILE
         with open(f"{directory}/{title}.html", 'w+') as htmlFile:
@@ -364,7 +372,57 @@ body {
         with open(f"{directory}/assets/script.js", 'w+') as jsFile:
             jsFile.write(js_string)
 
+        self.merge_html(f"{directory}/{title}.html", f"{directory}/assets/style.css", f"{directory}/assets/script.js", directory, title)
         return
+    
+    ## MERGE WEB FILES INTO A SINGLE DOC
+    def merge_html(self, html_input, css_input, js_input, directory, title):
+        
+        html_file = Path(f'{html_input}').read_text(encoding="utf-8")
+
+        soup = BeautifulSoup(html_file, features='lxml')
+        # Find link tags. example: <link rel="stylesheet" href="css/somestyle.css">
+        for tag in soup.find_all('link', href=True):
+            if tag.has_attr('href'):
+                css_file = Path(f'{css_input}').read_text(encoding="utf-8")
+
+                # remove the tag from soup
+                tag.extract()
+        
+                # insert style element
+                new_style = soup.new_tag('style')
+                new_style.string = css_file
+                soup.html.head.append(new_style)
+        
+        
+        # Find script tags. example: <script src="js/somescript.js"></script>
+        for tag in soup.find_all('script', src=True):
+            if tag.has_attr('src'):
+                js_file = Path(f'{js_input}').read_text(encoding="utf-8")
+
+                # remove the tag from soup
+                tag.extract()
+        
+                # insert script element
+                new_script = soup.new_tag('script')
+                new_script.string = js_file
+                soup.html.body.append(new_script)
+        
+        # Find image tags.
+        for tag in soup.find_all('img', src=True):
+            if tag.has_attr('src'):
+                file_content = Path(tag['src']).read_bytes()
+        
+                # replace filename with base64 of the content of the file
+                base64_file_content = base64.b64encode(file_content)
+                tag['src'] = "data:image/png;base64, {}".format(base64_file_content.decode('ascii'))
+
+        # Save onefile
+        with open(f"{directory}/{title}.html", "w", encoding="utf-8") as outfile:
+            outfile.write(str(soup))
+        
+        if os.path.isdir(f"{directory}/assets"):
+            shutil.rmtree(f"{directory}/assets")
 
     ## CLEAR RSS DATA
     def clear_RSS(self):
