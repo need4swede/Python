@@ -2,6 +2,7 @@
 
 ##### IMPORTS ################
 import sys, subprocess, warnings
+from turtle import left
 import os, platform, requests, re, time
 import pandas as pd
 from pathlib import Path
@@ -85,7 +86,7 @@ class PodRacingGUI(QWidget):
 
         ## FLOATING TOOLS
         self.option_overwrite = QCheckBox('Overwrite', self)
-        self.option_overwrite.move(15, 255)
+        self.option_overwrite.move(15, 280)
         self.option_overwrite.show()
         self.option_overwrite.setCursor(QCursor(Qt.CursorShape.DragCopyCursor))
         self.option_overwrite.setToolTip(
@@ -111,7 +112,16 @@ class PodRacingGUI(QWidget):
         self.length = QLabel('Episode Count')
         self.publish_date = QLabel('Last Updated:')
         self.credit = QLabel('PODRacer | by Mike Afshari')
+        self.version = QPushButton('Version 1.5')
+        self.version.setToolTip('Latest: v1.5\nClick to view changelog')
         self.credit.setStyleSheet('font-size: 11px; font-weight: bold;')
+        self.version.setStyleSheet('''
+            font-size: 10px; 
+            background: none; 
+            text-align: left; 
+            padding: 0; 
+            width: 2px;
+            ''')
 
         ## DOWNLOAD PROGRESS BAR
         self.progress_bar = QProgressBar()
@@ -136,6 +146,7 @@ class PodRacingGUI(QWidget):
         metaSec.addWidget(self.publish_date)
         metaSec.addSpacing(10)
         metaSec.addWidget(self.credit)
+        metaSec.addWidget(self.version)
         detailSec.addLayout(metaSec)
 
         # download section
@@ -410,18 +421,23 @@ body {
     def generate_link(self, link):
         podtrac = 'www.podtrac.com/pts/redirect.mp3/'
         radiolab = 'radiolab_podcast'
+        patreon = 'patreon'
         if podtrac in link:
             link = f"http://{link.split(podtrac)[-1]}"
         if radiolab in link:
             link = link.split('/radiolab_podcast/')[1]
             link = f"http://wnyc-origin-iad.streamguys1.com/radiolab_podcast/{link}"
             link = link.split('?')[0]
+        if patreon in link:
+            link = link.replace('&amp;', '&')
         return link
 
     ## DETECT AUDIO FORMAT
     def audio_format(self, file):
         self.format = file.split('.')[-1]
         self.format = re.sub(r"[^a-zA-Z0-9.]+","",self.format)
+        if 'tokentime' in self.format:
+            self.format = self.format.split('tokentime')[0]
         return self.format
 
     ## DOWNLOAD PODCAST AUDIO
@@ -475,7 +491,10 @@ body {
                 link = line
                 link = self.generate_link(link)
                 if not link.endswith('.mp3') or link.endswith('.wav') or link.endswith('.flac'):
-                    link = link.split('?')[0]
+                    if 'patreon' in link:
+                        pass
+                    else:
+                        link = link.split('?')[0]
                 
                 ## GET AUDIO FORMAT
                 format = self.audio_format(link)
