@@ -112,8 +112,11 @@ class PodRacingGUI(QWidget):
         self.length = QLabel('Episode Count')
         self.publish_date = QLabel('Last Updated:')
         self.credit = QLabel('PODRacer | by Mike Afshari')
-        self.version = QPushButton('Version 1.5')
-        self.version.setToolTip('Latest: v1.5\nClick to view changelog')
+        self.version = QPushButton('Version 1.6 Beta')
+        self.version.setToolTip(f"{self.version.text().replace('Version ', 'v').replace(' Beta', '')} changes:"
+            "\n- New Metadata Styling Option"
+            "\n- Added Patreon Support"
+            )
         self.credit.setStyleSheet('font-size: 11px; font-weight: bold;')
         self.version.setStyleSheet('''
             font-size: 10px; 
@@ -295,27 +298,14 @@ class PodRacingGUI(QWidget):
 
         pd.set_option('colheader_justify', 'center')   # FOR TABLE <th>
 
-        js_string = '''
-const header = document.querySelector('tr');
-const columns = header.children;
+        js_string = "const header = document.querySelector('tr');const columns = header.children;columns[0].innerText = 'EPISODE ORDER';let title = columns[1].innerText.toUpperCase();title = title.replace('TITLE', 'EPISODE TITLE');columns[1].innerText = title;let description = columns[2].innerText.toUpperCase();description = description.replace('DESCRIPTION', 'EPISODE DESCRIPTION');columns[2].innerText = description;"
 
-let title = columns[1].innerText.toUpperCase();
-title = title.replace('TITLE', 'EPISODE TITLE');
-columns[1].innerText = title;
-
-let description = columns[2].innerText.toUpperCase();
-description = description.replace('DESCRIPTION', 'EPISODE DESCRIPTION');
-columns[2].innerText = description;
-
-columns[0].innerText = 'EPISODE ORDER';
-'''
-
-        css_string = '''
+        dark_theme_css = '''
 body {
     background: black;
     text-align: center;
 }
-.mystyle {
+.podracing-style-dark {
     font-size: 11pt; 
     font-family: 'Sans Sarif';
     border-collapse: collapse; 
@@ -323,21 +313,21 @@ body {
     background: #19191a;
     color: #ededed;
 }
-.mystyle td, th {
+.podracing-style-dark td, th {
     font-family: 'PT Sans', sans-serif;
     font-weight: 700;
     padding: 25px 15px;
     margin: 10px;
     text-align: center;
 }
-.mystyle td + td {
+.podracing-style-dark td + td {
     font-weight: 400;
     text-align: left;
 }
-.mystyle tr:nth-child(even) {
+.podracing-style-dark tr:nth-child(even) {
     background: #2b2b2b;
 }
-.mystyle tr:hover {
+.podracing-style-dark tr:hover {
     background: black;
     color: white;
     cursor: pointer;
@@ -364,11 +354,11 @@ body {
 
         ## OUTPUT AN HTML FILE
         with open(f"{directory}/{title}.html", 'w+') as htmlFile:
-            htmlFile.write(html_string.format(table=rss.to_html(classes='mystyle')))
+            htmlFile.write(html_string.format(table=rss.to_html(classes='podracing-style-dark')))
         
         ## OUTPUT A CSS FILE
         with open(f"{directory}/assets/style.css", 'w+') as cssFile:
-            cssFile.write(css_string)
+            cssFile.write(dark_theme_css)
         
         ## OUTPUT JAVASCRIPT FILE
         with open(f"{directory}/assets/script.js", 'w+') as jsFile:
@@ -421,7 +411,8 @@ body {
     def generate_link(self, link):
         podtrac = 'www.podtrac.com/pts/redirect.mp3/'
         radiolab = 'radiolab_podcast'
-        patreon = 'patreon'
+        patreon = 'patreonusercontent'
+        self.hosted_patreon = False
         if podtrac in link:
             link = f"http://{link.split(podtrac)[-1]}"
         if radiolab in link:
@@ -430,6 +421,7 @@ body {
             link = link.split('?')[0]
         if patreon in link:
             link = link.replace('&amp;', '&')
+            self.hosted_patreon = True
         return link
 
     ## DETECT AUDIO FORMAT
@@ -491,9 +483,7 @@ body {
                 link = line
                 link = self.generate_link(link)
                 if not link.endswith('.mp3') or link.endswith('.wav') or link.endswith('.flac'):
-                    if 'patreon' in link:
-                        pass
-                    else:
+                    if not self.hosted_patreon:
                         link = link.split('?')[0]
                 
                 ## GET AUDIO FORMAT
