@@ -3,6 +3,7 @@
 ##### IMPORTS ################
 import sys, subprocess, warnings
 import os, platform, requests, re, time
+import pandas as pd
 from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QStatusBar, QWidget, QLabel, QLineEdit, QPushButton, QProgressBar, QMessageBox, QFileDialog, QVBoxLayout, QHBoxLayout, QCheckBox
 from PyQt6.QtGui import QIcon, QCursor, QFont
@@ -223,6 +224,7 @@ class PodRacingGUI(QWidget):
                     episodesText.write(rss_item['description']) ## DESCRIPTION TEXT
                 
                 ## APPEND METADATA
+                rss_item['description'] = rss_item['description'].replace('\n', ' ')
                 rss_items.append(rss_item)
 
             ## GET AUDIO LINKS
@@ -239,7 +241,10 @@ class PodRacingGUI(QWidget):
                 dl_link = str(list_links[x]).split('url="')[1].split('">')[0]
                 with open(self.links_file, "a+") as linksText:
                     linksText.write(dl_link + "\n")
-                
+            
+            df = pd.DataFrame(rss_items, columns=['title', 'description'])
+            df.to_html(self.appDir + '/fetch.html',index=0, encoding='utf-8')
+            
             ## UPDATE GUI
             if show_title == '':
                 show_title = 'Unknown'
@@ -289,7 +294,7 @@ class PodRacingGUI(QWidget):
     def clean_text(self, text, type):
         if type.lower() == 'html':
             clean = re.compile('<.*?>')
-            return re.sub(clean, '', text)
+            return re.sub(clean, '', text).strip()
         if type.lower() == '_title':
             clean = re.sub(r"[^a-zA-Z0-9 ,*\u2019-]+"," ",text)
             return clean
