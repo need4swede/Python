@@ -242,8 +242,10 @@ class PodRacingGUI(QWidget):
                 with open(self.links_file, "a+") as linksText:
                     linksText.write(dl_link + "\n")
             
-            df = pd.DataFrame(rss_items, columns=['title', 'description'])
-            df.to_html(self.appDir + '/fetch.html',index=0, encoding='utf-8')
+            ## BUILD HTML
+            rss_html = pd.DataFrame(rss_items, columns=['title', 'description'])
+            rss_html.to_html(self.appDir + '/fetch.html',index=0, encoding='utf-8')
+            self.build_html(rss_html)
             
             ## UPDATE GUI
             if show_title == '':
@@ -257,6 +259,59 @@ class PodRacingGUI(QWidget):
             self.urlBox.clear()
             self.urlBox.setPlaceholderText('Paste RSS Feed URL...')
             self.outputBtn.setEnabled(True)
+
+    ## BUILD HTML FROM FETCHED RSS
+    def build_html(self, rss):
+        pd.set_option('colheader_justify', 'center')   # FOR TABLE <th>
+
+        css_string = '''
+/* includes alternating gray and white with on-hover color *
+.mystyle {
+    font-size: 11pt; 
+    font-family: Arial;
+    border-collapse: collapse; 
+    border: 1px solid silver;
+
+}
+
+.mystyle td, th {
+    padding: 5px;
+}
+
+.mystyle tr:nth-child(even) {
+    background: #E0E0E0;
+}
+
+.mystyle tr:hover {
+    background: silver;
+    cursor: pointer;
+}
+'''
+
+        html_string = '''
+<html>
+    <head>
+        <title>PODRacing Export</title>
+        <link rel="stylesheet" type="text/css" href="style.css"/>
+        <style>
+            #STYLING
+        </style>
+    </head>
+    <body>
+        {table}
+    </body>
+</html>
+'''
+
+        ## OUTPUT AN HTML FILE
+        with open(self.appDir+ '/index.html', 'w') as htmlFile:
+            htmlFile.write(html_string.format(table=rss.to_html(classes='mystyle')))
+        
+        ## OUTPUT A CSS FILE
+        with open(self.appDir+ '/style.css', 'w') as cssFile:
+            cssFile.write(css_string)
+
+        return
 
     ## CLEAR RSS DATA
     def clear_RSS(self):
