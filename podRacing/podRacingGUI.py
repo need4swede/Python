@@ -510,6 +510,11 @@ body {
         ## REMOVE SPECIAL CHARACTERS FROM SHOW TITLE AND SET SHOW DIR
         show_title = self.title.text()
         show_title = self.clean_text(show_title, '_title')
+
+        ## CHECK SAVE DIR CHOICE
+        if not self.appDir == f'{QDir.homePath()}/podRacing':
+            shutil.move(f'{QDir.homePath()}/podRacing/{show_title}', f"{self.appDir}/{show_title}")
+
         show_dir = (f"{self.appDir}/{show_title}")
         
         ## CREATE DOWNLOAD DIR WITH SHOW TITLE AS NAME
