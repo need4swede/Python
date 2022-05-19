@@ -233,6 +233,11 @@ class PodRacingGUI(QWidget):
                 rss_item['title'] = item.title.get_text(strip=False).replace('\n', ' ').replace('\r', '')
                 rss_item['description'] = item.description.text.replace('\r', '')
                 rss_item['description'] = self.clean_text(rss_item['description'], 'html')
+                rss_item['pubdate'] = item.pubdate.text.split(',')[1]
+                if '-' in rss_item['pubdate']:
+                    rss_item['pubdate'] = rss_item['pubdate'].split('-')[0][:13]
+                elif '+' in rss_item['pubdate']:
+                    rss_item['pubdate'] = rss_item['pubdate'].split('+')[0][:13]
                 
                 ## WRITE EPISODE TITLES TO FILE
                 with open(self.episodes_list_file, "a+") as titlesText:
@@ -269,7 +274,7 @@ class PodRacingGUI(QWidget):
                     linksText.write(dl_link + "\n")
 
             ## BUILD HTML
-            rss_html = pd.DataFrame(rss_items, columns=['title', 'description'])
+            rss_html = pd.DataFrame(rss_items, columns=['title', 'pubdate', 'description'])
             rss_html.index +=1
             rss_html.index = rss_html.index.values[::-1]
             self.build_html(rss_html, self.clean_text(show_title, '_title'), show_dir)
