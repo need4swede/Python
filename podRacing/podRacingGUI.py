@@ -39,7 +39,6 @@ class PodRacingGUI(QWidget):
         # setup some flags
         self.isFetching = False
         self.isDownloading = False
-        self.setFont(QFont('Helvetica'))
 
         self.episode_titles = []
         self.episode_count = 0
@@ -87,7 +86,7 @@ class PodRacingGUI(QWidget):
 
         ## FLOATING TOOLS
         self.option_overwrite = QCheckBox('Overwrite', self)
-        self.option_overwrite.move(15, 280)
+        self.option_overwrite.move(15, 215)
         self.option_overwrite.show()
         self.option_overwrite.setCursor(QCursor(Qt.CursorShape.DragCopyCursor))
         self.option_overwrite.setToolTip(
@@ -113,7 +112,7 @@ class PodRacingGUI(QWidget):
         self.length = QLabel('Episode Count')
         self.publish_date = QLabel('Last Updated:')
         self.credit = QLabel('PODRacer | by Mike Afshari')
-        self.version = QPushButton('Version 1.6 Beta')
+        self.version = QLabel('Version 1.6 Beta')
         self.version.setToolTip(f"{self.version.text().replace('Version ', 'v').replace(' Beta', '')} changes:"
             "\n- New Metadata Styling Option"
             "\n- Added Patreon Support"
@@ -129,10 +128,12 @@ class PodRacingGUI(QWidget):
 
         ## DOWNLOAD PROGRESS BAR
         self.progress_bar = QProgressBar()
+        self.progress_bar.hide()
         
         ## DOWNLOAD BUTTON
         self.downloadBtn = QPushButton('Download')
         self.downloadBtn.setFixedSize(120,32)
+        self.downloadBtn.hide()
         self.downloadBtn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.downloadBtn.setEnabled(False)
         self.downloadBtn.clicked.connect(self.download_audio)
@@ -141,6 +142,7 @@ class PodRacingGUI(QWidget):
 
         # add widgets and layouts
         topBar.addWidget(self.urlBox)
+        topBar.addWidget(self.quitBtn)
         topBar.addWidget(self.button)
 
         # detail section
@@ -154,10 +156,9 @@ class PodRacingGUI(QWidget):
         detailSec.addLayout(metaSec)
 
         # download section
-        downloadSec.addWidget(self.quitBtn)
         downloadBtn.addWidget(self.downloadBtn)
         downloadSec.addWidget(self.progress_bar)
-        downloadSec.addSpacing(20)
+        # downloadSec.addSpacing(20)
         downloadSec.addLayout(downloadBtn)
         
         ## ADDITIONAL OPTIONS
@@ -168,9 +169,9 @@ class PodRacingGUI(QWidget):
         layout.addLayout(topBar)
         layout.addSpacing(5)
         layout.addLayout(detailSec)
-        layout.addSpacing(5)
+        layout.addSpacing(20)
         layout.addLayout(downloadSec)
-        layout.addSpacing(35)
+        # layout.addSpacing(35)
         layout.addWidget(self.outputBtn)
 
     ## RETRIEVES RSS DATA FROM URL
@@ -291,6 +292,7 @@ class PodRacingGUI(QWidget):
             self.urlBox.clear()
             self.urlBox.setPlaceholderText('Paste RSS Feed URL...')
             self.outputBtn.setEnabled(True)
+            self.downloadBtn.show()
 
             ## COPY TXT FILES TO SHOW METADATA FOLDER
             show_title = self.clean_text(show_title, '_title').lower().replace(' ', '')
@@ -531,6 +533,7 @@ body {
         ## GET DL LINK FROM 'LINKS.TXT' FILE
         ## DOWNLOAD EACH FILE AND RENAME TO MATCH EPISODE NAME
         timer_start = time.perf_counter()
+        self.progress_bar.show()
         with open(self.links_file) as linksText:
             for l_no, line in enumerate(linksText):
 
@@ -603,7 +606,7 @@ body {
         # update progress bar
         self.progress_bar.setValue(int(per))
         # adjust the font color to maintain the contrast
-        self.progress_bar.setStyleSheet('QProgressBar { color: #fff }')
+        self.progress_bar.setStyleSheet('QProgressBar { color: #fff; }')
 
     ## DOWNLOAD COMPLETE
     def download_complete(self, title, location):
@@ -638,6 +641,7 @@ body {
 
         ## RESET PROGRESS BAR
         self.progress_bar.reset()
+        self.progress_bar.hide()
 
     ## QUIT APPLICATION
     def quit(self):
@@ -885,10 +889,11 @@ if __name__ == '__main__':
     ''')
     
     podRacingGUI = PodRacingGUI()
+    app.setFont(QFont('Helvetica Nue'))
+    app.setStyleSheet("QLabel{font-family: 'Helvetica Nue';}")
     podRacingGUI.show()
-    
     podRacing = PodRacingApp(init())
-    podRacing.clear()
+    # podRacing.clear()
     podRacing.create_appDir()
     
 
