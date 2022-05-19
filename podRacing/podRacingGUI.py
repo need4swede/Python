@@ -631,6 +631,14 @@ body {
 
     ## QUIT APPLICATION
     def quit(self):
+        if os.path.isfile(self.input_file):
+            os.remove(self.input_file)
+        if os.path.isfile(self.episodes_file):
+            os.remove(self.episodes_file)
+        if os.path.isfile(self.episodes_list_file):
+            os.remove(self.episodes_list_file)
+        if os.path.isfile(self.links_file):
+            os.remove(self.links_file)
         sys.exit()
 
 ## APP
