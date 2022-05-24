@@ -230,7 +230,7 @@ class PodRacingGUI(QWidget):
                 rss_data = BeautifulSoup(rss_feed.content, features="lxml")
             except Exception: ## BAD!
                 self.urlBox.clear()
-                self.urlBox.setPlaceholderText('Invalid URL!')
+                self.urlBox.setPlaceholderText('Unable to run requests.get(rss_url)')
                 return
 
             ## GET METADATA
@@ -243,10 +243,11 @@ class PodRacingGUI(QWidget):
             except AttributeError:
                 try:
                     show_author = self.shorten_text(rss_data.find('description').text, 50)
+                    self.urlBox.setPlaceholderText('Unable to read author')
                 except AttributeError:
                     self.reset_gui()
                     self.urlBox.clear()
-                    self.urlBox.setPlaceholderText('Invalid URL!')
+                    self.urlBox.setPlaceholderText('bs4 unable to parse URL')
                     return
             latest_ep_date = rss_data.find('pubdate').text
             if '-' in latest_ep_date:
