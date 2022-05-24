@@ -224,14 +224,32 @@ class PodRacingGUI(QWidget):
         else:
             
             ## VALIDATE RSS FEED
-            try: ## GOOD!
+            try:  ## GOOD!
                 QCoreApplication.processEvents()
-                rss_feed = PodRacingApp.fetch_rss(PodRacingApp, rss_url)
-                rss_data = BeautifulSoup(rss_feed.content, features="lxml")
-            except Exception: ## BAD!
+            except Exception:  ## BAD!
                 self.urlBox.clear()
-                self.urlBox.setPlaceholderText('Unable to run requests.get(rss_url)')
+                self.urlBox.setPlaceholderText('QCore not good')
                 return
+            else:
+                print("qcore is good")
+
+            try:  ## GOOD!
+                rss_feed = PodRacingApp.fetch_rss(PodRacingApp, rss_url)
+            except Exception:  ## BAD!
+                self.urlBox.clear()
+                self.urlBox.setPlaceholderText('PodRacingApp.fetch_rss not working')
+                return
+            else:
+                print('PodRacingApp.fetch_rss good')
+
+            try:  ## GOOD!
+                rss_data = BeautifulSoup(rss_feed.content, features="lxml")
+            except Exception:  ## BAD!
+                self.urlBox.clear()
+                self.urlBox.setPlaceholderText('BeautifullSoup not working')
+                return
+            else:
+                print('BeautifullSoup good')
 
             ## GET METADATA
             items = rss_data.findAll('item')
@@ -430,13 +448,13 @@ body {
     ## MERGE WEB FILES INTO A SINGLE DOC
     def merge_html(self, html_input, css_input, js_input, directory, title):
         
-        html_file = Path(f'{html_input}').read_text()
+        html_file = Path(f'{html_input}').read_text(encoding="utf-8")
 
         soup = BeautifulSoup(html_file, features='lxml')
         # Find link tags. example: <link rel="stylesheet" href="css/somestyle.css">
         for tag in soup.find_all('link', href=True):
             if tag.has_attr('href'):
-                css_file = Path(f'{css_input}').read_text()
+                css_file = Path(f'{css_input}').read_text(encoding="utf-8")
 
                 # remove the tag from soup
                 tag.extract()
@@ -450,7 +468,7 @@ body {
         # Find script tags. example: <script src="js/somescript.js"></script>
         for tag in soup.find_all('script', src=True):
             if tag.has_attr('src'):
-                js_file = Path(f'{js_input}').read_text()
+                js_file = Path(f'{js_input}').read_text(encoding="utf-8")
 
                 # remove the tag from soup
                 tag.extract()
@@ -470,7 +488,7 @@ body {
                 tag['src'] = "data:image/png;base64, {}".format(base64_file_content.decode('ascii'))
 
         # Save onefile
-        with open(f"{directory}/{title}.html", "w", ) as outfile:
+        with open(f"{directory}/{title}.html", "w", encoding="utf-8") as outfile:
             outfile.write(str(soup))
         
         if os.path.isdir(f"{directory}/assets"):
