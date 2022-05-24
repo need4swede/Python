@@ -1,13 +1,12 @@
-#!/usr/bin/env python
-
 ##### IMPORTS ################
 import sys, subprocess, warnings
 import os, platform, requests, re, time, base64, shutil
 import pandas as pd
 from pathlib import Path
+from PyQt6 import QtCore
 from PyQt6.QtWidgets import QApplication, QStatusBar, QWidget, QLabel, QLineEdit, QPushButton, QProgressBar, QMessageBox, QFileDialog, QVBoxLayout, QHBoxLayout, QCheckBox
 from PyQt6.QtGui import QIcon, QCursor, QFont
-from PyQt6.QtCore import Qt, QDir, QCoreApplication
+from PyQt6.QtCore import Qt, QDir, QCoreApplication, QObject, QRunnable, pyqtSlot, QThreadPool
 from bs4 import BeautifulSoup
 ##### Dismiss the 'XML' warning
 warnings.filterwarnings("ignore", 
@@ -15,27 +14,35 @@ category=UserWarning, module='bs4')
 #############################
 
 ## TODO
-# SETTING A DIFFERENT DIRECTORY SEPERATES META AND AUDIO
-# ADDITIONAL MENU BUTTONS (OPEN META AFTER FETCH, COPY LINKS, ETC.)
+# RUN DOWNLOAD IN BACKGROUND PROCESS (DONE, I THINK?)
+# MAKE QUIT = STOP DOWNLOAD WHILE DOWNLOAD == TRUE ; ELSE QUIT = SYS.EXIT() AND FILE DELETION
+# FIXED PROGRESS BAR TO EMIT SIGNAL DURING DOWNLOAD
 
-## DONE
-# MERGE HTML/CSS/JS INTO ONE DOCUMENT FOR EASIER SHARING
-# ORGANIZE FETCH FILES
-
-##### INFORMATION ##########
-
-## Takes an RSS feed url as input
-## Returns metadata in readable format
-
-###### Created by need4swede
-###### Portfolio: https://mafshari.work/
-###### GitHub: https://github.com/need4swede
 ############################################
+
+class WorkerSignals(QObject):
+    finished = QtCore.pyqtSignal() # create a signal
+    result = QtCore.pyqtSignal(object) # create a signal that gets an object as argument
+
+class Worker(QRunnable):
+    def __init__(self, fn, *args, **kwargs):
+        super(Worker, self).__init__()
+        self.fn = fn # Get the function passed in
+        self.args = args # Get the arguments passed in
+        self.kwargs = kwargs # Get the keyward arguments passed in
+        self.signals = WorkerSignals() # Create a signal class
+
+    @pyqtSlot()
+    def run(self): # our thread's worker function
+        result = self.fn(*self.args, **self.kwargs) # execute the passed in function with its arguments
+        self.signals.result.emit(result)  # return result
+        self.signals.finished.emit()  # emit when thread ended
 
 ## GUI
 class PodRacingGUI(QWidget):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super(QWidget, self).__init__(*args, **kwargs)
+        self.threadpool = QThreadPool() 
         # setup some flags
         self.isFetching = False
         self.isDownloading = False
@@ -52,7 +59,7 @@ class PodRacingGUI(QWidget):
         self.episodes_list_file = self.appDir + "/episode_titles.txt"
 
         # setup some window specific things
-        self.setWindowTitle('Podcast Obtainable Data Racer')
+        self.setWindowTitle('podRacer - RSS Data Parser')
         self.setWindowIcon(QIcon('icon.ico'))
 
         # parent layout
@@ -111,11 +118,11 @@ class PodRacingGUI(QWidget):
         self.author = QLabel('Author')
         self.length = QLabel('Episode Count')
         self.publish_date = QLabel('Last Updated:')
-        self.credit = QLabel('PODRacer | by Mike Afshari')
-        self.version = QLabel('Version 1.6 Beta')
+        self.credit = QLabel('podRacer | by Mike Afshari')
+        self.version = QLabel('Version 0.8 Beta')
         self.version.setToolTip(f"{self.version.text().replace('Version ', 'v').replace(' Beta', '')} changes:"
-            "\n- New Metadata Styling Option"
-            "\n- Added Patreon Support"
+            "\n- Fixed 'Not Responding' bug during downloads"
+            "\n- Downloads are now passed through a secondary thread process"
             )
         self.credit.setStyleSheet('font-size: 11px; font-weight: bold;')
         self.version.setStyleSheet('''
@@ -136,7 +143,8 @@ class PodRacingGUI(QWidget):
         self.downloadBtn.hide()
         self.downloadBtn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.downloadBtn.setEnabled(False)
-        self.downloadBtn.clicked.connect(self.download_audio)
+        # self.btn_thread.pressed.connect(self.threadRunner)
+        self.downloadBtn.clicked.connect(self.threadRunner)
         self.button.clicked.connect(self.enable_dl)
         self.button.clicked.connect(self.fetch_RSS)
 
@@ -174,6 +182,28 @@ class PodRacingGUI(QWidget):
         # layout.addSpacing(35)
         layout.addWidget(self.outputBtn)
 
+    def thread_finished(self):
+        print("Finished signal emited.")
+        self.urlBox.setPlaceholderText("Done!")
+        try:
+            self.download_complete(SHOW_title, SHOW_dir)
+        except Exception:
+            print("\nNOPE")
+            pass
+        self.reset_gui()
+
+        # we'll use this function when 'result' signal is emited
+    def thread_result(self, s):
+        # add a label to layout
+        self.urlBox.setPlaceholderText("Running...")
+        # add a new label to window with the returned result from our thread
+
+    def threadRunner(self):
+        self.worker = Worker(self.download_audio) # create our thread and give it a function as argument with its args
+        self.worker.signals.result.connect(self.thread_result) # connect result signal of our thread to thread_result
+        self.worker.signals.finished.connect(self.thread_finished) # connect finish signal of our thread to thread_complete
+        self.threadpool.start(self.worker) # start thread
+
     ## RETRIEVES RSS DATA FROM URL
     def fetch_RSS(self):
 
@@ -186,7 +216,7 @@ class PodRacingGUI(QWidget):
             ## VALIDATE RSS FEED
             try: ## GOOD!
                 QCoreApplication.processEvents()
-                rss_feed = requests.get(rss_url)
+                rss_feed = PodRacingApp.fetch_rss(PodRacingApp, rss_url)
                 rss_data = BeautifulSoup(rss_feed.content, features="lxml")
             except Exception: ## BAD!
                 self.urlBox.clear()
@@ -196,6 +226,8 @@ class PodRacingGUI(QWidget):
             ## GET METADATA
             items = rss_data.findAll('item')
             show_title = rss_data.find('title').text
+            global SHOW_title
+            SHOW_title = show_title
             try:
                 show_author = rss_data.find('itunes:author').text
             except AttributeError:
@@ -221,7 +253,8 @@ class PodRacingGUI(QWidget):
             show_dir = f"{self.appDir}/{self.clean_text(show_title, '_title')}"
             if not os.path.isdir(show_dir):
                 os.makedirs(show_dir)
-            
+            global SHOW_dir
+            SHOW_dir = show_dir
             ## EXPORT EPISODE DATA TO FILE
             rss_items = []
             for item in items:
@@ -312,7 +345,7 @@ class PodRacingGUI(QWidget):
 
         pd.set_option('colheader_justify', 'center')   # FOR TABLE <th>
 
-        js_string = "const header = document.querySelector('tr');const columns = header.children;columns[0].innerText = 'EPISODE ORDER';let title = columns[1].innerText.toUpperCase();title = title.replace('TITLE', 'EPISODE TITLE');columns[1].innerText = title;let description = columns[2].innerText.toUpperCase();description = description.replace('DESCRIPTION', 'EPISODE DESCRIPTION');columns[2].innerText = description;"
+        js_string = "const header = document.querySelector('tr');const columns = header.children;columns[0].innerText = 'EPISODE ORDER';let title = columns[1].innerText.toUpperCase();title = title.replace('TITLE', 'EPISODE TITLE');columns[1].innerText = title;columns[2].innerText = columns[2].innerText.toUpperCase();description = columns[3].innerText.toUpperCase();description = description.replace('DESCRIPTION', 'EPISODE DESCRIPTION');columns[3].innerText = description;"
 
         dark_theme_css = '''
 body {
@@ -500,6 +533,8 @@ body {
     ## DOWNLOAD PODCAST AUDIO
     def download_audio(self):
 
+        self.isDownloading = True
+
         ## INITIALIZE A COUNTER AND TOTAL
         count = 0
         skip_count = 0
@@ -541,7 +576,7 @@ body {
                 timer_add = time.perf_counter()
                 QCoreApplication.processEvents()
                 count_per = (count / count_length) * 100
-                self.download_progress(count_per)
+                # self.download_progress(count_per) # ERROR!
 
                 ## GET EPISODE TITLE
                 ## IF TITLE IS BLANK, TITLE THEM NUMERICALLY IN ASC. ORDER
@@ -561,21 +596,23 @@ body {
                 format = self.audio_format(link)
 
                 ## DOWNLOAD AUDIO FILE WITH EPISODE NAME TO SHOW DIR
+                # r = (QtNetwork.QNetworkRequest(QUrl(link)))
                 r = requests.get(link, allow_redirects=True, stream=True)
+                # r = PodRacingApp.download_audio(PodRacingApp, link)
                 QCoreApplication.processEvents()
 
                 ## OVERWRITE EXISTING DOWNLOADS
                 if self.option_overwrite.isChecked():
-                    if count < 1:
-                        confirm_overwrite = QMessageBox.question(self, 'Warning', 'This will overwrite existing files\nDo you wish to continue?',
-                                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
-                    if confirm_overwrite == QMessageBox.StandardButton.Yes:
-                        print(f"{episode_title}")
-                        open(f"{show_dir}/audio/{_title}.{format}", 'wb').write(r.content)
-                        count += 1
-                    else:
-                        self.reset_gui()
-                        return
+                    # if count < 1:
+                    #     confirm_overwrite = QMessageBox.question(self, 'Warning', 'This will overwrite existing files\nDo you wish to continue?',
+                    #                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                    # if confirm_overwrite == QMessageBox.StandardButton.Yes:
+                    print(f"{episode_title}")
+                    open(f"{show_dir}/audio/{_title}.{format}", 'wb').write(r.content)
+                    count += 1
+                    # else:
+                    #     self.reset_gui()
+                    #     return
 
                 ## IF DOWNLOAD EXISTS, SKIP TO NEXT ONE (NO-OVERWRITING)
                 else:
@@ -598,8 +635,8 @@ body {
                 f"{skip_count}/{count_length} Skipped | "
                 f"Duration {int(timer_duration_min)} minutes and {timer_duration_sec:0.1f} seconds"
             )
-            self.download_complete(show_title, show_dir)
-            self.reset_gui()
+            # self.download_complete(show_title, show_dir)
+            # self.reset_gui()
 
     ## DOWNLOAD PROGRESS
     def download_progress(self, per):
@@ -653,7 +690,7 @@ body {
             os.remove(self.episodes_list_file)
         if os.path.isfile(self.links_file):
             os.remove(self.links_file)
-        sys.exit()
+        sys.exit() ## CAN'T EXECUTE WHILE DOWNLOADING!!
 
 ## APP
 class PodRacingApp(PodRacingGUI):
@@ -763,6 +800,18 @@ class PodRacingApp(PodRacingGUI):
                     with open(self.output_file, 'a') as output:
                         output.write(links + "\n")
             print('\nEpisode Count:', count)
+
+    def fetch_rss(self, rss_url):
+        QCoreApplication.processEvents()
+        fetch_call = requests.get(rss_url)
+        QCoreApplication.processEvents()
+        return fetch_call
+
+    def download_audio(self, link):
+        QCoreApplication.processEvents()
+        download = requests.get(link, allow_redirects=True, stream=True)
+        QCoreApplication.processEvents()
+        return download
 
 ## RUN
 if __name__ == '__main__':

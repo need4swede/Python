@@ -1,0 +1,4 @@
+beautifulsoup4==4.11.1
+pandas==1.4.0
+PyQt6==6.3.0
+requests==2.27.1

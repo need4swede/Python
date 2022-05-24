@@ -9,3 +9,4 @@ podRacing/fetch.py
 podRacing/fetch_links.py
 podRacing/icon.ico
 podRacing/pause.py
+.vscode/settings.json
