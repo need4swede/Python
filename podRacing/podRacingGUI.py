@@ -57,6 +57,7 @@ class PodRacingGUI(QWidget):
 
         self.episode_titles = []
         self.episode_count = 0
+        self.download_count = 1
 
         ## APPLICATION DIRECTORY
         self.appDir = f'{QDir.homePath()}/podRacing'
@@ -148,7 +149,6 @@ class PodRacingGUI(QWidget):
         ## DOWNLOAD BUTTON
         self.downloadBtn = QPushButton('Download')
         self.downloadBtn.setFixedSize(120,32)
-        self.downloadBtn.hide()
         self.downloadBtn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.downloadBtn.setEnabled(False)
         # self.btn_thread.pressed.connect(self.threadRunner)
@@ -203,14 +203,16 @@ class PodRacingGUI(QWidget):
         # we'll use this function when 'result' signal is emited
     def thread_result(self, s):
         # add a label to layout
-        self.urlBox.setPlaceholderText("Running...")
+        pass
         # add a new label to window with the returned result from our thread
 
     def threadRunner(self):
         self.worker = Worker(self.download_audio) # create our thread and give it a function as argument with its args
+        self.worker_progress = Worker(self.download_progress)
         self.worker.signals.result.connect(self.thread_result) # connect result signal of our thread to thread_result
         self.worker.signals.finished.connect(self.thread_finished) # connect finish signal of our thread to thread_complete
         self.threadpool.start(self.worker) # start thread
+        self.threadpool.start(self.worker_progress)
 
     ## RETRIEVES RSS DATA FROM URL
     def fetch_RSS(self):
@@ -649,9 +651,9 @@ body {
             # self.reset_gui()
 
     ## DOWNLOAD PROGRESS
-    def download_progress(self, per):
+    def download_progress(self):
         # update progress bar
-        self.progress_bar.setValue(int(per))
+        self.progress_bar.setValue(int(99))
         # adjust the font color to maintain the contrast
         self.progress_bar.setStyleSheet('QProgressBar { color: #fff; }')
 
