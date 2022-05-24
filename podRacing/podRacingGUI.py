@@ -94,7 +94,7 @@ class PodRacingGUI(QWidget):
         ## FLOATING TOOLS
         self.option_overwrite = QCheckBox('Overwrite', self)
         self.option_overwrite.move(15, 215)
-        self.option_overwrite.show()
+        self.option_overwrite.hide()
         self.option_overwrite.setCursor(QCursor(Qt.CursorShape.DragCopyCursor))
         self.option_overwrite.setToolTip(
             "Overwrites existing episodes\n"
@@ -326,6 +326,7 @@ class PodRacingGUI(QWidget):
             self.urlBox.setPlaceholderText('Paste RSS Feed URL...')
             self.outputBtn.setEnabled(True)
             self.downloadBtn.show()
+            self.option_overwrite.show()
 
             ## COPY TXT FILES TO SHOW METADATA FOLDER
             show_title = self.clean_text(show_title, '_title').lower().replace(' ', '')
@@ -548,6 +549,7 @@ body {
         self.button.setDisabled(True)
         self.outputBtn.setEnabled(False)
         self.downloadBtn.setEnabled(False)
+        self.option_overwrite.hide()
 
         ## REMOVE SPECIAL CHARACTERS FROM SHOW TITLE AND SET SHOW DIR
         show_title = self.title.text()
