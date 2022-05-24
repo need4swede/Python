@@ -18,6 +18,11 @@ category=UserWarning, module='bs4')
 # MAKE QUIT = STOP DOWNLOAD WHILE DOWNLOAD == TRUE ; ELSE QUIT = SYS.EXIT() AND FILE DELETION
 # FIXED PROGRESS BAR TO EMIT SIGNAL DURING DOWNLOAD
 
+## RSS FEED SAMPLES
+# https://rss.art19.com/apology-line
+# http://rss.art19.com/the-daily
+# https://feeds.fireside.fm/bibleinayear/rss
+
 ############################################
 
 class WorkerSignals(QObject):
