@@ -224,32 +224,14 @@ class PodRacingGUI(QWidget):
         else:
             
             ## VALIDATE RSS FEED
-            try:  ## GOOD!
+            try: ## GOOD!
                 QCoreApplication.processEvents()
-            except Exception:  ## BAD!
-                self.urlBox.clear()
-                self.urlBox.setPlaceholderText('QCore not good')
-                return
-            else:
-                print("qcore is good")
-
-            try:  ## GOOD!
                 rss_feed = PodRacingApp.fetch_rss(PodRacingApp, rss_url)
-            except Exception:  ## BAD!
-                self.urlBox.clear()
-                self.urlBox.setPlaceholderText('PodRacingApp.fetch_rss not working')
-                return
-            else:
-                print('PodRacingApp.fetch_rss good')
-
-            try:  ## GOOD!
                 rss_data = BeautifulSoup(rss_feed.content, features="lxml")
-            except Exception:  ## BAD!
+            except Exception: ## BAD!
                 self.urlBox.clear()
-                self.urlBox.setPlaceholderText('BeautifullSoup not working')
+                self.urlBox.setPlaceholderText('Unable to run requests.get(rss_url)')
                 return
-            else:
-                print('BeautifullSoup good')
 
             ## GET METADATA
             items = rss_data.findAll('item')
