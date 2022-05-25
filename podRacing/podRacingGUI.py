@@ -6,7 +6,7 @@ from pathlib import Path
 from PyQt6 import QtCore
 from PyQt6.QtWidgets import QApplication, QStatusBar, QWidget, QLabel, QLineEdit, QPushButton, QProgressBar, QMessageBox, QFileDialog, QVBoxLayout, QHBoxLayout, QCheckBox
 from PyQt6.QtGui import QIcon, QCursor, QFont
-from PyQt6.QtCore import Qt, QDir, QCoreApplication, QObject, QRunnable, pyqtSlot, QThreadPool
+from PyQt6.QtCore import Qt, QDir, QCoreApplication, QObject, QRunnable, pyqtSlot, QThreadPool, QTimer
 from bs4 import BeautifulSoup
 ##### Dismiss the 'XML' warning
 warnings.filterwarnings("ignore", 
@@ -58,6 +58,14 @@ class PodRacingGUI(QWidget):
         self.episode_titles = []
         self.episode_count = 0
         self.download_count = 1
+        self.counter = 1
+        self.count_length = 1
+        self.go = 0
+
+        self.timer = QTimer()
+        self.timer.setInterval(1000)
+        self.timer.timeout.connect(self.download_progress)
+        self.timer.start()
 
         ## APPLICATION DIRECTORY
         self.appDir = f'{QDir.homePath()}/podRacing'
@@ -563,12 +571,11 @@ body {
     ## DOWNLOAD PODCAST AUDIO
     def download_audio(self):
 
-        self.isDownloading = True
-
         ## INITIALIZE A COUNTER AND TOTAL
         count = 0
         skip_count = 0
         count_length = self.episode_count
+        self.count_length = count_length
 
         ## UPDATE GUI STATUS
         print(f"\nBeginning Download...\n\nEpisodes Found: {count_length}\n")
@@ -606,6 +613,7 @@ body {
                 ## SET PROGRESS BAR
                 timer_add = time.perf_counter()
                 QCoreApplication.processEvents()
+                self.isDownloading = True
                 count_per = (count / count_length) * 100
                 # self.download_progress(count_per) # ERROR!
 
@@ -658,6 +666,7 @@ body {
 
         ## WHEN DONE
         if count_length == self.episode_count:
+            self.isDownloading = False
             timer_duration_sec = (timer_add - timer_start)
             timer_duration_min = (timer_add - timer_start) / 60
             print('\nDownload Complete!\n')
@@ -672,7 +681,17 @@ body {
     ## DOWNLOAD PROGRESS
     def download_progress(self):
         # update progress bar
-        self.progress_bar.setValue(int(99))
+        if self.counter > 1 and self.go < 1:
+            self.go = self.go + 1
+            self.counter = 0
+        self.counter +=1
+        total = self.count_length
+        count_per = (self.counter / total) * 100
+        print(f"count_per: {count_per}")
+        print(f"self.counter: {self.counter}")
+        print(f"self.count_length: {self.count_length}")
+        if count_per < 100:
+            self.progress_bar.setValue(int(count_per))
         # adjust the font color to maintain the contrast
         self.progress_bar.setStyleSheet('QProgressBar { color: #fff; }')
 
