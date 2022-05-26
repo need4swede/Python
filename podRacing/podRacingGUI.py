@@ -1,71 +1,51 @@
+#!/usr/bin/env python
+
 ##### IMPORTS ################
 import sys, subprocess, warnings
 import os, platform, requests, re, time, base64, shutil
 import pandas as pd
 from pathlib import Path
-from PyQt6 import QtCore
 from PyQt6.QtWidgets import QApplication, QStatusBar, QWidget, QLabel, QLineEdit, QPushButton, QProgressBar, QMessageBox, QFileDialog, QVBoxLayout, QHBoxLayout, QCheckBox
 from PyQt6.QtGui import QIcon, QCursor, QFont
-from PyQt6.QtCore import Qt, QDir, QCoreApplication, QObject, QRunnable, pyqtSlot, QThreadPool, QTimer
+from PyQt6.QtCore import Qt, QDir, QCoreApplication
 from bs4 import BeautifulSoup
 ##### Dismiss the 'XML' warning
 warnings.filterwarnings("ignore", 
 category=UserWarning, module='bs4')
 #############################
 
-##### TODO
+## TODO
+# SETTING A DIFFERENT DIRECTORY SEPERATES META AND AUDIO
+# ADDITIONAL MENU BUTTONS (OPEN META AFTER FETCH, COPY LINKS, ETC.)
 
-### MAKE QUIT = STOP DOWNLOAD WHILE DOWNLOAD == TRUE ; ELSE QUIT = SYS.EXIT() AND FILE DELETION
-# LINE 595
+## DONE
+# MERGE HTML/CSS/JS INTO ONE DOCUMENT FOR EASIER SHARING
+# ORGANIZE FETCH FILES
 
-### FIXED PROGRESS BAR TO EMIT SIGNAL DURING DOWNLOAD
-# LINE 650
+# https://feeds.megaphone.fm/PARA9654630519
+# https://www.wnycstudios.org/feeds/series/podcasts?premiumtier=vipers&include_owner=true&audio_suffix=%26delivery=premium&audio_only=true&limit=10000
 
-## RSS FEED SAMPLES
-# https://rss.art19.com/apology-line
-# http://rss.art19.com/the-daily
-# https://feeds.fireside.fm/bibleinayear/rss
 
+##### INFORMATION ##########
+
+## Takes an RSS feed url as input
+## Returns metadata in readable format
+
+###### Created by need4swede
+###### Portfolio: https://mafshari.work/
+###### GitHub: https://github.com/need4swede
 ############################################
-
-class WorkerSignals(QObject):
-    finished = QtCore.pyqtSignal() # create a signal
-    result = QtCore.pyqtSignal(object) # create a signal that gets an object as argument
-
-class Worker(QRunnable):
-    def __init__(self, fn, *args, **kwargs):
-        super(Worker, self).__init__()
-        self.fn = fn # Get the function passed in
-        self.args = args # Get the arguments passed in
-        self.kwargs = kwargs # Get the keyward arguments passed in
-        self.signals = WorkerSignals() # Create a signal class
-
-    @pyqtSlot()
-    def run(self): # our thread's worker function
-        result = self.fn(*self.args, **self.kwargs) # execute the passed in function with its arguments
-        self.signals.result.emit(result)  # return result
-        self.signals.finished.emit()  # emit when thread ended
 
 ## GUI
 class PodRacingGUI(QWidget):
-    def __init__(self, *args, **kwargs):
-        super(QWidget, self).__init__(*args, **kwargs)
-        self.threadpool = QThreadPool() 
+    def __init__(self):
+        super().__init__()
         # setup some flags
         self.isFetching = False
         self.isDownloading = False
 
         self.episode_titles = []
         self.episode_count = 0
-        self.download_count = 1
-        self.counter = 1
-        self.count_length = 1
-        self.go = 0
-
-        self.timer = QTimer()
-        self.timer.setInterval(1000)
-        self.timer.timeout.connect(self.download_progress)
-        self.timer.start()
 
         ## APPLICATION DIRECTORY
         self.appDir = f'{QDir.homePath()}/podRacing'
@@ -94,6 +74,7 @@ class PodRacingGUI(QWidget):
         # download section
         downloadSec = QHBoxLayout()
         downloadBtn = QVBoxLayout()
+        downloadMeta = QVBoxLayout()
         
         ## QUIT SECTION
         self.quitBtn = QPushButton('Quit')
@@ -111,7 +92,7 @@ class PodRacingGUI(QWidget):
         ## FLOATING TOOLS
         self.option_overwrite = QCheckBox('Overwrite', self)
         self.option_overwrite.move(15, 215)
-        self.option_overwrite.hide()
+        self.option_overwrite.show()
         self.option_overwrite.setCursor(QCursor(Qt.CursorShape.DragCopyCursor))
         self.option_overwrite.setToolTip(
             "Overwrites existing episodes\n"
@@ -149,7 +130,9 @@ class PodRacingGUI(QWidget):
             padding: 0; 
             width: 2px;
             ''')
-
+        self.current_download = QLabel()
+        self.current_download.hide()
+        
         ## DOWNLOAD PROGRESS BAR
         self.progress_bar = QProgressBar()
         self.progress_bar.hide()
@@ -157,10 +140,10 @@ class PodRacingGUI(QWidget):
         ## DOWNLOAD BUTTON
         self.downloadBtn = QPushButton('Download')
         self.downloadBtn.setFixedSize(120,32)
+        self.downloadBtn.hide()
         self.downloadBtn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.downloadBtn.setEnabled(False)
-        # self.btn_thread.pressed.connect(self.threadRunner)
-        self.downloadBtn.clicked.connect(self.threadRunner)
+        self.downloadBtn.clicked.connect(self.download_audio)
         self.button.clicked.connect(self.enable_dl)
         self.button.clicked.connect(self.fetch_RSS)
 
@@ -182,8 +165,11 @@ class PodRacingGUI(QWidget):
         # download section
         downloadBtn.addWidget(self.downloadBtn)
         downloadSec.addWidget(self.progress_bar)
-        # downloadSec.addSpacing(20)
+        downloadSec.addSpacing(20)
         downloadSec.addLayout(downloadBtn)
+
+        downloadMeta.addWidget(self.current_download)
+
         
         ## ADDITIONAL OPTIONS
         self.additionalOptions.setSizeGripEnabled(False)
@@ -197,30 +183,7 @@ class PodRacingGUI(QWidget):
         layout.addLayout(downloadSec)
         # layout.addSpacing(35)
         layout.addWidget(self.outputBtn)
-
-    def thread_finished(self):
-        print("Finished signal emited.")
-        self.urlBox.setPlaceholderText("Done!")
-        try:
-            self.download_complete(SHOW_title, SHOW_dir)
-        except Exception:
-            print("\nNOPE")
-            pass
-        self.reset_gui()
-
-        # we'll use this function when 'result' signal is emited
-    def thread_result(self, s):
-        # add a label to layout
-        pass
-        # add a new label to window with the returned result from our thread
-
-    def threadRunner(self):
-        self.worker = Worker(self.download_audio) # create our thread and give it a function as argument with its args
-        self.worker_progress = Worker(self.download_progress)
-        self.worker.signals.result.connect(self.thread_result) # connect result signal of our thread to thread_result
-        self.worker.signals.finished.connect(self.thread_finished) # connect finish signal of our thread to thread_complete
-        self.threadpool.start(self.worker) # start thread
-        self.threadpool.start(self.worker_progress)
+        layout.addLayout(downloadMeta)
 
     ## RETRIEVES RSS DATA FROM URL
     def fetch_RSS(self):
@@ -232,48 +195,27 @@ class PodRacingGUI(QWidget):
         else:
             
             ## VALIDATE RSS FEED
-            try:  ## GOOD!
+            try: ## GOOD!
                 QCoreApplication.processEvents()
-            except Exception:  ## BAD!
-                self.urlBox.clear()
-                self.urlBox.setPlaceholderText('QCore not good')
-                return
-            else:
-                print("qcore is good")
-
-            try:  ## GOOD!
                 rss_feed = PodRacingApp.fetch_rss(PodRacingApp, rss_url)
-            except Exception:  ## BAD!
-                self.urlBox.clear()
-                self.urlBox.setPlaceholderText('PodRacingApp.fetch_rss not working')
-                return
-            else:
-                print('PodRacingApp.fetch_rss good')
-
-            try:  ## GOOD!
                 rss_data = BeautifulSoup(rss_feed.content, features="lxml")
-            except Exception:  ## BAD!
+            except Exception: ## BAD!
                 self.urlBox.clear()
-                self.urlBox.setPlaceholderText('BeautifullSoup not working')
+                self.urlBox.setPlaceholderText('Invalid URL!')
                 return
-            else:
-                print('BeautifullSoup good')
 
             ## GET METADATA
             items = rss_data.findAll('item')
             show_title = rss_data.find('title').text
-            global SHOW_title
-            SHOW_title = show_title
             try:
                 show_author = rss_data.find('itunes:author').text
             except AttributeError:
                 try:
                     show_author = self.shorten_text(rss_data.find('description').text, 50)
-                    self.urlBox.setPlaceholderText('Unable to read author')
                 except AttributeError:
                     self.reset_gui()
                     self.urlBox.clear()
-                    self.urlBox.setPlaceholderText('bs4 unable to parse URL')
+                    self.urlBox.setPlaceholderText('Invalid URL!')
                     return
             latest_ep_date = rss_data.find('pubdate').text
             if '-' in latest_ep_date:
@@ -290,8 +232,7 @@ class PodRacingGUI(QWidget):
             show_dir = f"{self.appDir}/{self.clean_text(show_title, '_title')}"
             if not os.path.isdir(show_dir):
                 os.makedirs(show_dir)
-            global SHOW_dir
-            SHOW_dir = show_dir
+            
             ## EXPORT EPISODE DATA TO FILE
             rss_items = []
             for item in items:
@@ -363,7 +304,6 @@ class PodRacingGUI(QWidget):
             self.urlBox.setPlaceholderText('Paste RSS Feed URL...')
             self.outputBtn.setEnabled(True)
             self.downloadBtn.show()
-            self.option_overwrite.show()
 
             ## COPY TXT FILES TO SHOW METADATA FOLDER
             show_title = self.clean_text(show_title, '_title').lower().replace(' ', '')
@@ -575,7 +515,6 @@ body {
         count = 0
         skip_count = 0
         count_length = self.episode_count
-        self.count_length = count_length
 
         ## UPDATE GUI STATUS
         print(f"\nBeginning Download...\n\nEpisodes Found: {count_length}\n")
@@ -583,9 +522,16 @@ body {
         self.downloadBtn.setText('Downloading')
         self.urlBox.setPlaceholderText('Please Wait...')
         self.button.setDisabled(True)
-        self.outputBtn.setEnabled(False)
+        self.outputBtn.disconnect()
+        self.outputBtn.clicked.connect(self.quit)
+        self.outputBtn.setToolTip('Quit Application')
+        self.outputBtn.setText('Terminate Process')
         self.downloadBtn.setEnabled(False)
+        self.current_download.show()
         self.option_overwrite.hide()
+        self.quitBtn.hide()
+        self.button.hide()
+        self.urlBox.hide()
 
         ## REMOVE SPECIAL CHARACTERS FROM SHOW TITLE AND SET SHOW DIR
         show_title = self.title.text()
@@ -613,9 +559,8 @@ body {
                 ## SET PROGRESS BAR
                 timer_add = time.perf_counter()
                 QCoreApplication.processEvents()
-                self.isDownloading = True
                 count_per = (count / count_length) * 100
-                # self.download_progress(count_per) # ERROR!
+                self.download_progress(count_per)
 
                 ## GET EPISODE TITLE
                 ## IF TITLE IS BLANK, TITLE THEM NUMERICALLY IN ASC. ORDER
@@ -623,6 +568,7 @@ body {
                 if episode_title == '':
                     episode_title = f"Episode {l_no + 1}"
                 _title = self.clean_text(episode_title, '_title')
+                self.current_download.setText(f"Downloading: {count}/{count_length} - {int(count_per)}%\n{self.shorten_text(_title, 50)}")
                 
                 ## GET DOWNLOAD LINK
                 link = line
@@ -635,26 +581,27 @@ body {
                 format = self.audio_format(link)
 
                 ## DOWNLOAD AUDIO FILE WITH EPISODE NAME TO SHOW DIR
-                # r = (QtNetwork.QNetworkRequest(QUrl(link)))
-                r = requests.get(link, allow_redirects=True, stream=True)
-                # r = PodRacingApp.download_audio(PodRacingApp, link)
+                QCoreApplication.processEvents()
+                r = PodRacingApp.download_audio(PodRacingApp, link)
                 QCoreApplication.processEvents()
 
                 ## OVERWRITE EXISTING DOWNLOADS
                 if self.option_overwrite.isChecked():
-                    # if count < 1:
-                    #     confirm_overwrite = QMessageBox.question(self, 'Warning', 'This will overwrite existing files\nDo you wish to continue?',
-                    #                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
-                    # if confirm_overwrite == QMessageBox.StandardButton.Yes:
-                    print(f"{episode_title}")
-                    open(f"{show_dir}/audio/{_title}.{format}", 'wb').write(r.content)
-                    count += 1
-                    # else:
-                    #     self.reset_gui()
-                    #     return
+                    QCoreApplication.processEvents()
+                    if count < 1:
+                        confirm_overwrite = QMessageBox.question(self, 'Warning', 'This will overwrite existing files\nDo you wish to continue?',
+                                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+                    if confirm_overwrite == QMessageBox.StandardButton.Yes:
+                        print(f"{episode_title}")
+                        open(f"{show_dir}/audio/{_title}.{format}", 'wb').write(r.content)
+                        count += 1
+                    else:
+                        self.reset_gui()
+                        return
 
                 ## IF DOWNLOAD EXISTS, SKIP TO NEXT ONE (NO-OVERWRITING)
                 else:
+                    QCoreApplication.processEvents()
                     if not os.path.isfile(f"{show_dir}/audio/{_title}.{format}"):
                         print(f"{episode_title}")
                         open(f"{show_dir}/audio/{_title}.{format}", 'wb').write(r.content)
@@ -666,34 +613,30 @@ body {
 
         ## WHEN DONE
         if count_length == self.episode_count:
-            self.isDownloading = False
+            QCoreApplication.processEvents()
             timer_duration_sec = (timer_add - timer_start)
             timer_duration_min = (timer_add - timer_start) / 60
+            timer_duration_sec_mod = (timer_duration_sec / 10)
+            self.current_download.setText(f"{show_title} - {count - skip_count}/{count_length} Downloaded | {skip_count} Skipped\n"
+            f"Duration: {int(timer_duration_min)} minutes and {timer_duration_sec_mod:0.1f} seconds")
             print('\nDownload Complete!\n')
             print(
                 f"{count - skip_count}/{count_length} Files Downloaded | "
                 f"{skip_count}/{count_length} Skipped | "
-                f"Duration {int(timer_duration_min)} minutes and {timer_duration_sec:0.1f} seconds"
+                f"Duration {int(timer_duration_min)} minutes and {timer_duration_sec_mod:0.1f} seconds"
             )
-            # self.download_complete(show_title, show_dir)
-            # self.reset_gui()
+            self.download_progress(100)
+            self.download_complete(show_title, show_dir)
+            self.reset_gui()
 
     ## DOWNLOAD PROGRESS
-    def download_progress(self):
+    def download_progress(self, per):
         # update progress bar
-        if self.counter > 1 and self.go < 1:
-            self.go = self.go + 1
-            self.counter = 0
-        self.counter +=1
-        total = self.count_length
-        count_per = (self.counter / total) * 100
-        print(f"count_per: {count_per}")
-        print(f"self.counter: {self.counter}")
-        print(f"self.count_length: {self.count_length}")
-        if count_per < 100:
-            self.progress_bar.setValue(int(count_per))
+        QCoreApplication.processEvents()
+        self.progress_bar.setValue(int(per))
         # adjust the font color to maintain the contrast
         self.progress_bar.setStyleSheet('QProgressBar { color: #fff; }')
+        QCoreApplication.processEvents()
 
     ## DOWNLOAD COMPLETE
     def download_complete(self, title, location):
@@ -715,9 +658,17 @@ body {
         
         ## ACTIVATE 'FETCH' AND 'DIRECTORY' BUTTONS
         self.button.setEnabled(True)
+        self.outputBtn.disconnect()
+        self.outputBtn.clicked.connect(self.set_download_dir)
         self.outputBtn.setEnabled(False)
+        self.outputBtn.setText('📂 Save Directory')
+        self.outputBtn.setToolTip(self.appDir)
+        self.button.show()
         self.button.setText('Fetch')
+        self.urlBox.show()
         self.urlBox.setPlaceholderText('Paste RSS Feed URL...')
+        self.quitBtn.show()
+        self.option_overwrite.show()
 
         ## DE-ACTIVATE 'DOWNLOAD' BUTTON
         self.downloadBtn.setDisabled(True)
@@ -740,7 +691,7 @@ body {
             os.remove(self.episodes_list_file)
         if os.path.isfile(self.links_file):
             os.remove(self.links_file)
-        sys.exit() ## CAN'T EXECUTE WHILE DOWNLOADING!!
+        sys.exit()
 
 ## APP
 class PodRacingApp(PodRacingGUI):
