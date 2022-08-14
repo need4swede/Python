@@ -1,4 +1,4 @@
-
+from need4swede import clear
 # Given a phone number and a list of words, figure out which of the words can be found within the phone number
 
 # 1 = None
@@ -28,4 +28,5 @@ PhoneKeys = dict(
     nine = (9, 'wxyz')
 )
 
+clear()
 print(PhoneKeys)
