@@ -21,7 +21,7 @@ class Jellyfin():
                 else:
                     print(f'Skipped: {root}')
 
-    # Adds tag to found 'tvshow.nfo' file
+    # Adds genre to found 'tvshow.nfo' file
     def process_nfo_file(self, file_path, genre):
         with open(file_path, 'r+', encoding='utf-8') as file:
             lines = file.readlines()
