@@ -17,7 +17,7 @@ class Jellyfin():
                     if file.endswith('tvshow.nfo'):
                         file_path = os.path.join(root, file)
                         self.process_nfo_file(file_path)
-                        print(f'Processed: {root}', tag)
+                        print(f'Processed: {root}')
                 else:
                     print(f'Skipped: {root}')
 
