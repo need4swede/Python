@@ -45,7 +45,7 @@ class Jellyfin():
 if __name__ == "__main__":
 
     # Directory path of where your shows are stored
-    show_directory = input("Enter the directory path for your Jellyfin's show folder: ")
+    show_directory = input("Enter the directory path for your Jellyfin's show library: ")
     show_directory = r"{dir}".format(dir=show_directory)
 
     # Tag that you want added to all of your shows
