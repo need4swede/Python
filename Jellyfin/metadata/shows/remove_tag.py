@@ -1,50 +1,35 @@
 import os
 
-class Jellyfin():
-
-    # Searches show directory for 'tvshow.nfo' files
+class Jellyfin:
     def process_directory(self, directory, tag):
+        skip_list = {os.path.join(directory, "Game of Thrones (2011)")}
 
-        # Include folders you do not want to include in your search
-        skip_list = [
-        f"{directory}\\Game of Thrones (2011)"
-        ]
-
-        # Begin search
         for root, dirs, files in os.walk(directory):
+            if root in skip_list:
+                print(f"Skipped: {root}")
+                continue
+
             for file in files:
-                if not root in skip_list:
-                    if file.endswith('tvshow.nfo'):
-                        file_path = os.path.join(root, file)
-                        self.process_nfo_file(file_path, tag)
-                        print(f'Processed: {root}')
-                else:
-                    print(f'Skipped: {root}')
+                if file.endswith('tvshow.nfo'):
+                    file_path = os.path.join(root, file)
+                    self.process_nfo_file(file_path, tag)
+                    print(f"Processed: {root}")
 
-    # Removes tag to found 'tvshow.nfo' file
     def process_nfo_file(self, file_path, tag):
-        with open(file_path, 'r+', encoding='utf-8') as file:
-            lines = file.readlines()
-            for i, line in enumerate(lines):
-                if f'<tag>{tag}</tag>' in line:
-                    lines.pop(i)
-                    break
-            else:
-                pass
+        lines = []
+        with open(file_path, 'r', encoding='utf-8') as file:
+            for line in file:
+                if f"<tag>{tag}</tag>".strip() not in line.strip():
+                    lines.append(line)
 
-            file.seek(0)
+        with open(file_path, 'w', encoding='utf-8') as file:
             file.writelines(lines)
-            file.truncate()
 
 if __name__ == "__main__":
-
-    # Directory path of where your shows are stored
-    show_directory = input("Enter the directory path for your Jellyfin's show library: ")
+    show_directory = input("Enter the directory path for your Jellyfin's show library: ").strip()
     show_directory = r"{dir}".format(dir=show_directory)
 
-    # Tag that you want removed from all of your shows
-    tag = input("Tag to remove: ")
+    tag = input("Tag to remove: ").strip()
 
-    # Begin instance
     jf = Jellyfin()
     jf.process_directory(show_directory, tag)
