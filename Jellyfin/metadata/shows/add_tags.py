@@ -16,7 +16,7 @@ class Jellyfin():
                 if not root in skip_list:
                     if file.endswith('tvshow.nfo'):
                         file_path = os.path.join(root, file)
-                        self.process_nfo_file(file_path)
+                        self.process_nfo_file(file_path, tag)
                         print(f'Processed: {root}')
                 else:
                     print(f'Skipped: {root}')
