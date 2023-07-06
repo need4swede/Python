@@ -8,10 +8,10 @@ def install(cwd):
     subprocess.run(["pip", "install", "-r", "requirements.txt", "--quiet"])
     print("Packages Installed.\nSee 'packages.txt' for a complete list\n-----------------")
     os.rename(os.path.join(cwd, 'requirements.txt'), os.path.join(cwd, 'packages.txt'))
-    config()
+    config(cwd)
 
 ## RUN CONFIG
-def config():
+def config(cwd):
 
     ## GET INITIAL DATA
     with open('config.py', 'r') as configFile:
@@ -54,6 +54,10 @@ def config():
     log_file = log_file.strip()
     log_file = os.path.join(log_file, 'log.txt')
 
+    ## SET REFRESH MODE
+    print('\n\nSet your Refresh Mode. This can be updated later by re-running the setup')
+    set_refresh_mode(cwd)
+
     ## UPDATED CONFIG DATA
     configured_data = f"""server = dict(
     address = "{address}",
@@ -80,6 +84,42 @@ refresh_mode = dict(
     ## COMPLETE
     print('\nSetup is now complete!\nYou can now run "listen.py"')
 
+## SET REFRESH MODE
+def set_refresh_mode(cwd):
+    changes = input('\n1. Scan for Changes\n2. Scan for Missing Metadata\n3. Replace all Metadata (leave images)\n4. Replaces all Images (leave metadata)\n5. Replace all Metadata and Images\n\nInput: ')
+    try:
+        if int(changes) == 1:
+            change_refresh_mode(os.path.join(cwd, 'listen.py'), 9, "REFRESH_MODE = config.refresh_mode['default']")
+        elif int(changes) == 2:
+            change_refresh_mode(os.path.join(cwd, 'listen.py'), 9, "REFRESH_MODE = config.refresh_mode['missing']")
+        elif int(changes) == 3:
+            change_refresh_mode(os.path.join(cwd, 'listen.py'), 9, "REFRESH_MODE = config.refresh_mode['replace_metadata']")
+        elif int(changes) == 4:
+            change_refresh_mode(os.path.join(cwd, 'listen.py'), 9, "REFRESH_MODE = config.refresh_mode['replace_images']")
+        elif int(changes) == 5:
+            change_refresh_mode(os.path.join(cwd, 'listen.py'), 9, "REFRESH_MODE = config.refresh_mode['replace_all']")
+        else:
+            print('Invalid input!\nExiting...')
+            sys.exit()
+        print('\nRefresh Mode Updated!')
+    except ValueError:
+        print('\n\nInvalid input!\nExiting...')
+        sys.exit()
+
+## UPDATE REFRESH MODE
+def change_refresh_mode(file_path, line_number, refresh_mode):
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+
+    if line_number < 1 or line_number > len(lines):
+        print(f"Invalid line number: {line_number}")
+        return
+
+    lines[line_number - 1] = refresh_mode + '\n'
+
+    with open(file_path, 'w') as file:
+        file.writelines(lines)
+
 ## GET CURRENT DIR
 cwd = os.getcwd()
 
@@ -87,4 +127,15 @@ cwd = os.getcwd()
 if os.path.isfile(os.path.join(cwd, 'requirements.txt')):
     install(cwd)
 else:
-    config()
+    mode = input('1. Change Config\n2. Change Refresh Mode\n\nInput: ')
+    try:
+        if int(mode) == 1:
+            config(cwd)
+        elif int(mode) == 2:
+            set_refresh_mode(cwd)
+        else:
+            print('Invalid input!\nExiting...')
+            sys.exit()
+    except ValueError:
+        print('\n\nInvalid input!\nExiting...')
+        sys.exit()

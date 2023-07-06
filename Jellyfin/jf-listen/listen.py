@@ -6,6 +6,8 @@ if "Imports":
     from watchdog.observers import Observer
     from watchdog.events import FileSystemEventHandler
 
+REFRESH_MODE = config.refresh_mode['missing']
+
 ## JELLYFIN INFO AND ACTIONS
 class Jellyfin():
 
@@ -15,11 +17,11 @@ class Jellyfin():
         self.address = config.server['address']
         self.url = f"{self.address}:{self.port}"
 
+        self.refresh_mode = REFRESH_MODE
         self.api_key = config.server['api_key']
-        self.library = config.server['library_id']
-        self.refresh_mode = config.refresh_mode['default']
-        self.content_dir = config.server['content_dir']
         self.logfile = config.server['log_file']
+        self.library = config.server['library_id']
+        self.content_dir = config.server['content_dir']
 
     ## RUN REFRESH
     def refresh(self):
