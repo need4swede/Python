@@ -44,15 +44,16 @@ class Jellyfin():
 class ListenForChanges(FileSystemEventHandler):
 
     ## INITIALIZE CLASS
-    def __init__(self, jellyfin):
+    def __init__(self, jellyfin, content_dir):
         self.jellyfin = jellyfin
+        self.content_dir = content_dir
 
     ## START LISTENING
     def start(self):
 
         ## START OBSERVER
         observer = Observer()
-        observer.schedule(listening, directory, recursive=True)
+        observer.schedule(listening, self.content_dir, recursive=True)
         observer.start()
 
         ## PRINT TO TERMINAL
@@ -141,9 +142,8 @@ if __name__ == '__main__':
 
     ## CREATE JELLYFIN INSTANCE
     jellyfin = Jellyfin()
-    directory = jellyfin.content_dir
 
     ## CREATE LISTENING INSTANCE
-    listening = ListenForChanges(jellyfin)
+    listening = ListenForChanges(jellyfin, jellyfin.content_dir)
     listening.start()
 
