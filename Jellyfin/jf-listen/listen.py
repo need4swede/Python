@@ -1,7 +1,7 @@
 
 ## IMPORTS
 if "Imports":
-    import config, os, requests, time
+    import config, os, requests, time, keyboard
     from datetime import datetime
     from watchdog.observers import Observer
     from watchdog.events import FileSystemEventHandler
@@ -63,6 +63,9 @@ class ListenForChanges(FileSystemEventHandler):
         try:
             while True:
                 ## CHECKS FOR CHANGES EVERY SECOND
+                if keyboard.is_pressed('r'):
+                    jellyfin.refresh()
+                    print('\nRefresh sent!\n')
                 time.sleep(1)
         except KeyboardInterrupt:
             ## STOPS ON KEY INPUT

@@ -3,8 +3,9 @@ server = dict(
     port = "8096",
     api_key = "a30c9b33ef5b4368bfca89489d2f62aa",
     content_dir = "/Volumes/Bifrost/Yggdrasil/Movies",
-    zlibrary_id = "f137a2dd21bbc1b99aa5c0f6bf02a805",
-    log_file = "/Users/mafshari/Documents/jellyfin_logs/log.txt"
+    library_id = "f137a2dd21bbc1b99aa5c0f6bf02a805",
+    log_file = "/Users/mafshari/Documents/jellyfin_logs/log.txt",
+    refresh_delay = "15"
 )
 
 refresh_mode = dict(
