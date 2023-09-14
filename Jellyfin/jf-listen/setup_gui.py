@@ -2,7 +2,7 @@
 if 'Imports':
 
     if 'Standard':
-        import sys, re
+        import os, sys, re
         from datetime import datetime
         from functools import partial
 
@@ -239,9 +239,32 @@ class SetupApp(QWidget):
             else:
                 self.next_button.click()
 
+    ## GENERATE CONFIG FILE
     def save_config(self):
-        # This is just a placeholder. You'd gather data from the fields and call your config() function.
+        current_file_directory = os.path.dirname(os.path.abspath(__file__))
+        config_py_file = os.path.join(current_file_directory, 'config.py')
+        config_cfg_file = os.path.join(current_file_directory, 'config.cfg')
+        config_content = """server = dict(
+    address = "",
+    api_key = ""
+)
+
+refresh_mode = dict(
+    default = "Refresh",
+    missing = "Refresh?Recursive=true&ImageRefreshMode=FullRefresh&MetadataRefreshMode=FullRefresh&ReplaceAllImages=false&ReplaceAllMetadata=false",
+    replace_images = "Refresh?Recursive=true&ImageRefreshMode=FullRefresh&MetadataRefreshMode=FullRefresh&ReplaceAllImages=true&ReplaceAllMetadata=false",
+    replace_metadata = "Refresh?Recursive=true&ImageRefreshMode=FullRefresh&MetadataRefreshMode=FullRefresh&ReplaceAllImages=false&ReplaceAllMetadata=true",
+    replace_all = "Refresh?Recursive=true&ImageRefreshMode=FullRefresh&MetadataRefreshMode=FullRefresh&ReplaceAllImages=true&ReplaceAllMetadata=true"
+)
+"""
+
+        with open(config_cfg_file, "w") as cfg_file:
+            cfg_file.write(config_content)
+        with open(config_py_file, "w") as py_file:
+            py_file.write(config_content)
+
         QMessageBox.information(self, 'Info', 'Configuration Saved.')
+
 
 ## RUN
 if __name__ == '__main__':
