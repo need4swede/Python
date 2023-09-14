@@ -2,12 +2,9 @@
 if 'Imports':
 
     if 'Standard':
-        import os, sys, re
+        import sys, re
         from datetime import datetime
         from functools import partial
-
-    if 'Libraries':
-        from n4s import fs, term, web, strgs
 
     if 'PyQt6':
         from PyQt6.QtWidgets import (QApplication, QWidget, QLabel, QHBoxLayout, QVBoxLayout, QCheckBox, QStackedWidget,
@@ -32,9 +29,6 @@ if 'Settings':
 
 ## GLOBAL VARIABLES
 if 'Global Variables':
-
-    ## OS VERSION
-    OS_VERSION = float(fs.system('info')[1])
 
     ## USER DIR
     USER = f"{QDir.homePath()}"
@@ -76,10 +70,10 @@ class SetupApp(QWidget):
         layout.addWidget(self.pages)
 
         ## NEXT BUTTON
-        self.next_to_add_dirs = QPushButton('Next')
-        self.next_to_add_dirs.clicked.connect(self.next_page)
-        self.next_to_add_dirs.setEnabled(False)
-        layout.addWidget(self.next_to_add_dirs)
+        self.next_button = QPushButton('Next')
+        self.next_button.clicked.connect(self.next_page)
+        self.next_button.setEnabled(False)
+        layout.addWidget(self.next_button)
 
         ## SET LAYOUT
         self.setLayout(layout)
@@ -124,6 +118,11 @@ class SetupApp(QWidget):
         self.port_input = QLineEdit()
         self.port_input.setMaxLength(4)
         self.port_input.setPlaceholderText("8096")
+
+        ## SERVER PORT INPUT - VALIDATION
+        self.port_input.textChanged.connect(partial(self.validate_inputs, self.port_input))
+        self.port_input.editingFinished.connect(partial(self.default_input, self.port_input))
+
         port_layout.addWidget(self.port_input)
         port_page = QWidget()
         port_page.setLayout(port_layout)
@@ -134,6 +133,11 @@ class SetupApp(QWidget):
         api_layout = QVBoxLayout()
         self.add_centered_label('Jellyfin API Key', api_layout)
         self.api_key_input = QLineEdit()
+
+        ## SERVER API INPUT - VALIDATION
+        self.api_key_input.textChanged.connect(partial(self.validate_inputs, self.api_key_input))
+        self.api_key_input.editingFinished.connect(partial(self.default_input, self.api_key_input))
+
         api_layout.addWidget(self.api_key_input)
         api_page = QWidget()
         api_page.setLayout(api_layout)
@@ -147,7 +151,7 @@ class SetupApp(QWidget):
         text_width = fm.horizontalAdvance(element.text())
 
         ## ADJUST WINDOW WIDTH
-        new_width = max(text_width + 180, 275)  # +40 for some padding
+        new_width = max(text_width + 130, 275)  # +40 for some padding
         self.setFixedWidth(new_width)
 
     ## CREATE A CENTERED QLABEL
@@ -159,38 +163,72 @@ class SetupApp(QWidget):
 
     ## VALIDATE USER INPUTS ON EACH PAGE
     def validate_inputs(self, element):
+
+        ## VALIDATE INPUT
         if element.hasFocus() and element.text():
-            ip_pattern = r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$"
-            is_ip = re.match(ip_pattern, element.text())
-            valid_domain_endings = ['com', 'net', 'org']
-            is_domain = any(element.text().endswith('.' + domain) for domain in valid_domain_endings)
-            if not element.text()[-1] == '.' and (is_ip or is_domain):
-                self.next_to_add_dirs.setEnabled(True)
-            else:
-                self.next_to_add_dirs.setEnabled(False)
+
+            ## PAGE INDEX
+            currentPageIndex = self.pages.currentIndex()
+
+            ## ADDRESS PAGE
+            if currentPageIndex == 0:
+
+                ## CHECKS IF INPUT IS A VALID IP OR DOMAIN
+                ip_pattern = r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$"
+                is_ip = re.match(ip_pattern, element.text())
+                valid_domain_endings = ['com', 'net', 'org']
+                is_domain = any(element.text().endswith('.' + domain) for domain in valid_domain_endings)
+                if not element.text()[-1] == '.' and (is_ip or is_domain):
+                    self.next_button.setEnabled(True)
+                else:
+                    self.next_button.setEnabled(False)
+
+            ## PORT PAGE
+            if currentPageIndex == 1:
+
+                ## CHECKS IF INPUT IS A VALID PORT NUMBER
+                if re.match("^[0-9]+$", element.text()):
+                    self.next_button.setEnabled(True)
+                else:
+                    self.next_button.setEnabled(False)
+
+            ## API KEY PAGE
+            if currentPageIndex == 2:
+
+                ## INVALIDATE KEYS THAT ARE TOO SHORT
+                if len(element.text()) > 30:
+                    self.next_button.setEnabled(True)
+                else:
+                    self.next_button.setEnabled(False)
         else:
-            self.next_to_add_dirs.setEnabled(False)
+            self.next_button.setEnabled(False)
 
     ## HANDLE PAGE NAVIGATION
     def next_page(self):
+
+        ## CURRENT PAGE
         current_index = self.pages.currentIndex()
 
-        # If currently on address page, check for port in address or if it starts with "192."
+        ## CHECK FOR PORT ON NEXT PAGE IF ADDRESS IS AN IP
         if current_index == 0:
             match = re.match(r"^(.*?):(\d{1,4})$", self.address_input.text())
-            if match or not self.address_input.text().startswith("192."):
+            if match or not re.match(r"^[0-9]{3}\.", self.address_input.text()):
                 if match:
                     self.server_address, self.server_port = match.groups()
                 else:
                     self.server_address = self.address_input.text()
-                self.pages.setCurrentIndex(current_index + 2)  # Skip the port page
+                self.pages.setCurrentIndex(current_index + 2)
                 return
 
-        # If not on the last page, simply move to the next page
+        ## HANDLE NAVIGATION
         if current_index + 1 < self.pages.count():
+            self.next_button.setEnabled(False)
             self.pages.setCurrentIndex(current_index + 1)
+            if self.pages.currentIndex() == 2:
+                self.next_button.setText('Save Config')
+            else:
+                self.next_button.setText('Next')
         else:
-            # Last page, call save_config or any other appropriate action
             self.save_config()
 
     ## USE DEFAULT INPUT ON 'RETURN' PRESS
@@ -199,11 +237,7 @@ class SetupApp(QWidget):
             if not element.text():
                 element.setText(element.placeholderText())
             else:
-                self.next_to_add_dirs.click()
-
-    def install_packages(self):
-        # This is just a placeholder. You'd call your install() function here.
-        QMessageBox.information(self, 'Info', 'Packages Installed.')
+                self.next_button.click()
 
     def save_config(self):
         # This is just a placeholder. You'd gather data from the fields and call your config() function.
