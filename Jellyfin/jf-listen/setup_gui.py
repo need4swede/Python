@@ -2,9 +2,12 @@
 if 'Imports':
 
     if 'Standard':
-        import os, sys, re
+        import os, sys, re, socket
         from datetime import datetime
         from functools import partial
+
+    if 'Libraries':
+        from n4s import fs, strgs
 
     if 'PyQt6':
         from PyQt6.QtWidgets import (QApplication, QWidget, QLabel, QHBoxLayout, QVBoxLayout, QCheckBox, QStackedWidget,
@@ -16,7 +19,7 @@ if 'Imports':
 if 'Settings':
 
     ## APP INFO
-    APP_NAME = "JF Listen - Setup"
+    APP_NAME = "jf-listen"
 
     ## APP VERSION
     APP_VERSION = 1.0
@@ -27,11 +30,8 @@ if 'Settings':
     ## APP YEAR
     APP_YEAR = datetime.today().strftime("%Y")
 
-## GLOBAL VARIABLES
-if 'Global Variables':
-
-    ## USER DIR
-    USER = f"{QDir.homePath()}"
+    ## APP DIR
+    APP_DIR = os.path.join(QDir.homePath(), 'jf-listen')
 
     ## SCREEN WIDTH
     SCREEN_WIDTH = ''
@@ -48,10 +48,10 @@ class SetupApp(QWidget):
 
         ## SET STARTING WIDTH (DYNAMICALLY ADJUSTS)
         self.setFixedWidth(275)
+        self.setFixedHeight(140)
 
         ## STORED VARIABLES
         self.server_address = ''
-        self.api_key = ''
 
         ## CHECKS
         self.is_ip = False
@@ -69,7 +69,7 @@ class SetupApp(QWidget):
         ## INITIALIZE PAGES
         self.init_address_page()
         self.init_port_page()
-        self.init_api_page()
+        self.init_auth_page()
         layout.addWidget(self.pages)
 
         ## NEXT BUTTON
@@ -131,20 +131,32 @@ class SetupApp(QWidget):
         port_page.setLayout(port_layout)
         self.pages.addWidget(port_page)
 
-    ## INITIALIZE API KEY PAGE
-    def init_api_page(self):
-        api_layout = QVBoxLayout()
-        self.add_centered_label('Jellyfin API Key', api_layout)
-        self.api_key_input = QLineEdit()
+    ## INITIALIZE AUTH PAGE
+    def init_auth_page(self):
 
-        ## SERVER API INPUT - VALIDATION
-        self.api_key_input.textChanged.connect(partial(self.validate_inputs, self.api_key_input))
-        self.api_key_input.editingFinished.connect(partial(self.default_input, self.api_key_input))
+        ## SET LAYOUT
+        auth_layout = QVBoxLayout()
 
-        api_layout.addWidget(self.api_key_input)
-        api_page = QWidget()
-        api_page.setLayout(api_layout)
-        self.pages.addWidget(api_page)
+        ## USERNAME
+        self.add_centered_label('Username', auth_layout)
+        self.user_input = QLineEdit()
+        self.user_input.textChanged.connect(partial(self.validate_inputs, self.user_input))
+        self.user_input.editingFinished.connect(partial(self.default_input, self.user_input))
+        auth_layout.addWidget(self.user_input)
+        auth_layout.addSpacing(15)
+
+        ## PASSWORD
+        self.add_centered_label('Password', auth_layout)
+        self.password_input = QLineEdit()
+        self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
+        self.password_input.textChanged.connect(partial(self.validate_inputs, self.password_input))
+        self.password_input.editingFinished.connect(partial(self.default_input, self.password_input))
+        auth_layout.addWidget(self.password_input)
+
+        ## CREATE PAGE
+        auth_page = QWidget()
+        auth_page.setLayout(auth_layout)
+        self.pages.addWidget(auth_page)
 
     ## DYNAMICALLY ADJUST WINDOW SIZE BASED ON TEXT LENGHT
     def adjust_page_width(self, element):
@@ -195,11 +207,11 @@ class SetupApp(QWidget):
                 else:
                     self.next_button.setEnabled(False)
 
-            ## API KEY PAGE
+            ## LOGIN PAGE
             if currentPageIndex == 2:
 
                 ## INVALIDATE KEYS THAT ARE TOO SHORT
-                if len(element.text()) > 30:
+                if len(element.text()) > 1:
                     self.next_button.setEnabled(True)
                 else:
                     self.next_button.setEnabled(False)
@@ -216,6 +228,7 @@ class SetupApp(QWidget):
         if current_index == 0:
             ip_address = re.match(r"^[0-9]{3}\.", self.address_input.text())
             if not ip_address:
+                self.setFixedHeight(220)
                 self.pages.setCurrentIndex(current_index + 2)
                 return
             else:
@@ -226,6 +239,7 @@ class SetupApp(QWidget):
             self.next_button.setEnabled(False)
             self.pages.setCurrentIndex(current_index + 1)
             if self.pages.currentIndex() == 2:
+                self.setFixedHeight(220)
                 self.next_button.setText('Save Config')
             else:
                 self.next_button.setText('Next')
@@ -247,17 +261,48 @@ class SetupApp(QWidget):
         else:
             self.server_address = f"{self.protocol_input.currentText()}{self.address_input.text()}"
 
+        self.device_name = socket.gethostname().replace('.local', '')
+
+    ## BUILDS FILE DIRECTORIES
+    def build_directories(self):
+
+        ## BUILD APP DIR
+        fs.path_exists(APP_DIR, Make=True)
+
+        ## LOG DIRS
+        fs.path_exists(os.path.join(APP_DIR, 'logs'), Make=True)
+        fs.path_exists(os.path.join(APP_DIR, 'logs', 'all'), Make=True)
+        fs.path_exists(os.path.join(APP_DIR, 'logs', 'errors'), Make=True)
+
+        ## LOG FILES
+        self.log_file = os.path.join(APP_DIR, 'logs', 'all', 'log.txt')
+        self.error_log_file = os.path.join(APP_DIR, 'logs', 'errors', 'error_log.txt')
+
     ## GENERATE CONFIG FILE
     def save_config(self):
 
         ## GENERATE SERVER ADDRESS
         self.build_address()
+
+        ## GENERATE APP DIRECTORIES
+        self.build_directories()
+
+        ## CREATE CONFIG FILE
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
         config_py_file = os.path.join(current_file_directory, 'config.py')
-        config_cfg_file = os.path.join(current_file_directory, 'config.cfg')
         config_content = f"""server = dict(
     address = "{self.server_address}",
-    api_key = "{self.api_key_input.text()}"
+    user = "{self.user_input.text()}",
+    password = "{self.password_input.text()}"
+)
+
+local = dict(
+    app = "{APP_NAME}",
+    version = "{APP_VERSION}",
+    device = "{self.device_name}",
+    id = "{self.device_name}_{APP_VERSION}",
+    log = "{self.log_file}",
+    error_log = "{self.error_log_file}"
 )
 
 refresh_mode = dict(
@@ -269,13 +314,13 @@ refresh_mode = dict(
 )
 """
 
-        with open(config_cfg_file, "w") as cfg_file:
-            cfg_file.write(config_content)
+        ## WRITE CONFIG TO FILE
         with open(config_py_file, "w") as py_file:
             py_file.write(config_content)
 
+        ## SHOW COMPLETION MESSAGE
         QMessageBox.information(self, 'Info', 'Configuration Saved.')
-
+        self.close()
 
 ## RUN
 if __name__ == '__main__':
