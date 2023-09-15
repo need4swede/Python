@@ -53,6 +53,9 @@ class SetupApp(QWidget):
         self.server_address = ''
         self.api_key = ''
 
+        ## CHECKS
+        self.is_ip = False
+
         ## LAUNCH GUI
         self.init_ui()
 
@@ -209,16 +212,14 @@ class SetupApp(QWidget):
         ## CURRENT PAGE
         current_index = self.pages.currentIndex()
 
-        ## CHECK FOR PORT ON NEXT PAGE IF ADDRESS IS AN IP
+        ## SKIP PORT INPUT ON NON-IP INPUTS
         if current_index == 0:
-            match = re.match(r"^(.*?):(\d{1,4})$", self.address_input.text())
-            if match or not re.match(r"^[0-9]{3}\.", self.address_input.text()):
-                if match:
-                    self.server_address, self.server_port = match.groups()
-                else:
-                    self.server_address = self.address_input.text()
+            ip_address = re.match(r"^[0-9]{3}\.", self.address_input.text())
+            if not ip_address:
                 self.pages.setCurrentIndex(current_index + 2)
                 return
+            else:
+                self.is_ip = True
 
         ## HANDLE NAVIGATION
         if current_index + 1 < self.pages.count():
@@ -239,14 +240,24 @@ class SetupApp(QWidget):
             else:
                 self.next_button.click()
 
+    ## BUILDS SERVER ADDRESS FROM INPUTS
+    def build_address(self):
+        if self.is_ip:
+            self.server_address = f"{self.protocol_input.currentText()}{self.address_input.text()}:{self.port_input.text()}"
+        else:
+            self.server_address = f"{self.protocol_input.currentText()}{self.address_input.text()}"
+
     ## GENERATE CONFIG FILE
     def save_config(self):
+
+        ## GENERATE SERVER ADDRESS
+        self.build_address()
         current_file_directory = os.path.dirname(os.path.abspath(__file__))
         config_py_file = os.path.join(current_file_directory, 'config.py')
         config_cfg_file = os.path.join(current_file_directory, 'config.cfg')
-        config_content = """server = dict(
-    address = "",
-    api_key = ""
+        config_content = f"""server = dict(
+    address = "{self.server_address}",
+    api_key = "{self.api_key_input.text()}"
 )
 
 refresh_mode = dict(
