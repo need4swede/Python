@@ -15,8 +15,8 @@ if 'Imports':
         from PyQt6.QtGui import QFontMetrics
         from PyQt6.QtCore import Qt, QDir
 
-## SETTINGS
-if 'Settings':
+## APP SETTINGS
+if 'Application Settings':
 
     ## APP INFO
     APP_NAME = "jf-listen"
@@ -26,9 +26,6 @@ if 'Settings':
 
     ## APP DEVS
     APP_DEVS = "need4swede"
-
-    ## APP YEAR
-    APP_YEAR = datetime.today().strftime("%Y")
 
     ## APP DIR
     APP_DIR = os.path.join(QDir.homePath(), 'jf-listen')
@@ -70,6 +67,7 @@ class SetupApp(QWidget):
         self.init_address_page()
         self.init_port_page()
         self.init_auth_page()
+        self.init_libraries_page()
         layout.addWidget(self.pages)
 
         ## NEXT BUTTON
@@ -158,6 +156,32 @@ class SetupApp(QWidget):
         auth_page.setLayout(auth_layout)
         self.pages.addWidget(auth_page)
 
+    ## INITIALIZE AUTH PAGE
+    def init_libraries_page(self):
+
+        ## SET LAYOUT
+        libraries_layout = QVBoxLayout()
+
+        ## MOVIES
+        self.add_centered_label('Name of Movies Library', libraries_layout)
+        self.movies_input = QLineEdit('Movies')
+        self.movies_input.setPlaceholderText('Movies')
+        self.movies_input.editingFinished.connect(partial(self.default_input, self.movies_input))
+        libraries_layout.addWidget(self.movies_input)
+        libraries_layout.addSpacing(15)
+
+        ## SHOWS
+        self.add_centered_label('Name of Shows Library', libraries_layout)
+        self.shows_input = QLineEdit('Shows')
+        self.shows_input.setPlaceholderText('Shows')
+        self.shows_input.editingFinished.connect(partial(self.default_input, self.shows_input))
+        libraries_layout.addWidget(self.shows_input)
+
+        ## CREATE PAGE
+        libraries_page = QWidget()
+        libraries_page.setLayout(libraries_layout)
+        self.pages.addWidget(libraries_page)
+
     ## DYNAMICALLY ADJUST WINDOW SIZE BASED ON TEXT LENGHT
     def adjust_page_width(self, element):
 
@@ -215,6 +239,7 @@ class SetupApp(QWidget):
                     self.next_button.setEnabled(True)
                 else:
                     self.next_button.setEnabled(False)
+
         else:
             self.next_button.setEnabled(False)
 
@@ -240,6 +265,8 @@ class SetupApp(QWidget):
             self.pages.setCurrentIndex(current_index + 1)
             if self.pages.currentIndex() == 2:
                 self.setFixedHeight(220)
+            if self.pages.currentIndex() == 3:
+                self.next_button.setEnabled(True)
                 self.next_button.setText('Save Config')
             else:
                 self.next_button.setText('Next')
@@ -293,7 +320,9 @@ class SetupApp(QWidget):
         config_content = f"""server = dict(
     address = "{self.server_address}",
     user = "{self.user_input.text()}",
-    password = "{self.password_input.text()}"
+    password = "{self.password_input.text()}",
+    movie_library= "{self.movies_input.text()}",
+    show_library = "{self.shows_input.text()}",
 )
 
 local = dict(
